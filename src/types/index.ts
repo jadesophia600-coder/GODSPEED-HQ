@@ -2,7 +2,7 @@ export type UserRole = 'super_admin' | 'regional_manager' | 'member';
 
 export type BusinessStatus = 'PRO' | 'Distributors' | 'Manager' | 'Senior Manager' | 'Executive Manager' | 'Director';
 
-export type StatusType = 'ACTIVE' | 'PENDING' | 'COMPLETED' | 'APPROVED' | 'REJECTED' | 'INACTIVE' | 'EXCUSED' | 'PRESENT';
+export type StatusType = 'ACTIVE' | 'PENDING' | 'COMPLETED' | 'APPROVED' | 'REJECTED' | 'INACTIVE' | 'EXCUSED' | 'PRESENT' | 'LATE' | 'ABSENT' | 'NOT MARKED';
 
 export interface Member {
   id: string;
@@ -76,6 +76,30 @@ export interface AttendanceRecord {
   check_in_time: string;
   event_type: string;
   status: StatusType;
+  session_token?: string;
+  created_at?: string;
+}
+
+export interface AttendanceSession {
+  id: string;
+  office_id: string;
+  office_name: string;
+  session_token: string;
+  date: string;
+  expires_at: string;
+  status: 'ACTIVE' | 'EXPIRED' | 'CLOSED';
+  created_by?: string;
+  created_at?: string;
+}
+
+export interface AttendanceValidationResult {
+  success: boolean;
+  code?: 'EXPIRED' | 'INVALID_TOKEN' | 'WRONG_OFFICE' | 'ALREADY_RECORDED' | 'SUCCESS';
+  message: string;
+  record?: AttendanceRecord;
+  session?: AttendanceSession;
+  existingTime?: string;
+  existingOffice?: string;
 }
 
 export interface EarningsRecord {
@@ -134,3 +158,4 @@ export interface Notification {
   read: boolean;
   type: 'info' | 'success' | 'warning' | 'gold';
 }
+

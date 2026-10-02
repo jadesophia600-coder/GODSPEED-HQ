@@ -96,7 +96,19 @@ CREATE TABLE IF NOT EXISTS public.dues (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. CREATE ATTENDANCE TABLE
+-- 7. CREATE ATTENDANCE TABLE & SESSIONS
+CREATE TABLE IF NOT EXISTS public.attendance_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    office_id TEXT NOT NULL,
+    office_name TEXT NOT NULL,
+    session_token TEXT UNIQUE NOT NULL,
+    date DATE DEFAULT CURRENT_DATE,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    status TEXT DEFAULT 'ACTIVE',
+    created_by TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS public.attendance (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     member_id TEXT,
@@ -105,10 +117,14 @@ CREATE TABLE IF NOT EXISTS public.attendance (
     office_name TEXT DEFAULT 'Global HQ — London',
     date DATE DEFAULT CURRENT_DATE,
     check_in_time TEXT NOT NULL,
-    event_type TEXT NOT NULL,
-    status TEXT DEFAULT 'ACTIVE',
+    event_type TEXT DEFAULT 'Daily Attendance',
+    status TEXT DEFAULT 'PRESENT',
+    session_token TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Unique constraint to prevent duplicate member check-ins on the same day
+CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_member_date ON public.attendance (member_id, date);
 
 -- 8. CREATE EARNINGS TABLE
 CREATE TABLE IF NOT EXISTS public.earnings (

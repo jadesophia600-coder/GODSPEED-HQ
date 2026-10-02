@@ -51,6 +51,8 @@ import { MemberProfileModal } from './components/profile/MemberProfileModal';
 import { AddMemberModal } from './components/modals/AddMemberModal';
 import { StatCardSkeleton } from './components/ui/LoadingSkeleton';
 import { EmptyState } from './components/ui/EmptyState';
+import { MemberAttendanceDashboard } from './components/dashboard/MemberAttendanceDashboard';
+import { AdminAttendanceDashboard } from './components/attendance/AdminAttendanceDashboard';
 
 export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -452,71 +454,84 @@ export function App() {
           
           {/* Dashboard Tab */}
           {currentTab === 'dashboard' && (
-            <div className="space-y-6">
-              
-              {/* Hero & Quick Attendance Check-In Banner */}
-              <DashboardHero 
-                user={activeUserDisplay} 
-                userRole={userRole} 
-                todayAttendanceMarked={todayAttendanceMarked}
-                onQuickMarkAttendance={handleQuickMarkAttendance}
+            userRole === 'member' ? (
+              <MemberAttendanceDashboard
+                user={activeUserDisplay}
+                attendanceRecords={attendanceRecords}
+                onAttendanceMarkedSuccess={(record) => {
+                  setAttendanceRecords([record, ...attendanceRecords]);
+                  setTodayAttendanceMarked(true);
+                  triggerToast(`Attendance Marked: ${record.status}`);
+                }}
+                onNavigateTab={(tab) => setCurrentTab(tab as NavTab)}
               />
+            ) : (
+              <div className="space-y-6">
+                
+                {/* Hero & Quick Attendance Check-In Banner */}
+                <DashboardHero 
+                  user={activeUserDisplay} 
+                  userRole={userRole} 
+                  todayAttendanceMarked={todayAttendanceMarked}
+                  onQuickMarkAttendance={handleQuickMarkAttendance}
+                />
 
-              {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCardSkeleton />
-                  <StatCardSkeleton />
-                  <StatCardSkeleton />
-                  <StatCardSkeleton />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard
-                    label="Today's Attendance Rate"
-                    value={attendanceRecords.length > 0 ? "94.2%" : "100%"}
-                    icon={<CalendarCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
-                    trend={{ value: '+2.4%', isPositive: true, period: 'today' }}
-                    subtitle="Verified office check-ins"
-                  />
-                  <StatCard
-                    label="Total Office Members"
-                    value={members.length > 0 ? members.length.toLocaleString() : '1,248'}
-                    icon={<Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
-                    subtitle="Active network"
-                  />
-                  <StatCard
-                    label="Connected Hubs"
-                    value={offices.length > 0 ? offices.length.toString() : '4'}
-                    icon={<Building2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
-                    subtitle="International offices"
-                  />
-                  <StatCard
-                    label="Total Volume"
-                    value={`${(pvSubmissions.reduce((acc, curr) => acc + (curr.pv_amount || 0), 0) || 342000).toLocaleString()} PV`}
-                    icon={<Award className="w-5 h-5 text-amber-500" />}
-                    isGold={true}
-                    subtitle="Accumulated PV points"
-                  />
-                </div>
-              )}
+                {isLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <StatCardSkeleton />
+                    <StatCardSkeleton />
+                    <StatCardSkeleton />
+                    <StatCardSkeleton />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <StatCard
+                      label="Today's Attendance Rate"
+                      value={attendanceRecords.length > 0 ? "94.2%" : "100%"}
+                      icon={<CalendarCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
+                      trend={{ value: '+2.4%', isPositive: true, period: 'today' }}
+                      subtitle="Verified office check-ins"
+                    />
+                    <StatCard
+                      label="Total Office Members"
+                      value={members.length > 0 ? members.length.toLocaleString() : '1,248'}
+                      icon={<Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+                      subtitle="Active network"
+                    />
+                    <StatCard
+                      label="Connected Hubs"
+                      value={offices.length > 0 ? offices.length.toString() : '4'}
+                      icon={<Building2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
+                      subtitle="International offices"
+                    />
+                    <StatCard
+                      label="Total Volume"
+                      value={`${(pvSubmissions.reduce((acc, curr) => acc + (curr.pv_amount || 0), 0) || 342000).toLocaleString()} PV`}
+                      icon={<Award className="w-5 h-5 text-amber-500" />}
+                      isGold={true}
+                      subtitle="Accumulated PV points"
+                    />
+                  </div>
+                )}
 
-              <DataVisualizationSection userRole={userRole} darkMode={darkMode} />
+                <DataVisualizationSection userRole={userRole} darkMode={darkMode} />
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  <MembersTable
-                    members={members}
-                    onSelectMember={setSelectedMember}
-                    onAddMember={() => setShowAddMember(true)}
-                    userRole={userRole}
-                  />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <MembersTable
+                      members={members}
+                      onSelectMember={setSelectedMember}
+                      onAddMember={() => setShowAddMember(true)}
+                      userRole={userRole}
+                    />
+                  </div>
+                  <div>
+                    <RecentActivityList activities={activities} />
+                  </div>
                 </div>
-                <div>
-                  <RecentActivityList activities={activities} />
-                </div>
+
               </div>
-
-            </div>
+            )
           )}
 
           {/* Members Management Tab */}
@@ -559,11 +574,26 @@ export function App() {
 
           {/* Attendance Tab (Primary Feature Focus) */}
           {currentTab === 'attendance' && (
-            <AttendanceView
-              attendanceRecords={attendanceRecords}
-              userRole={userRole}
-              onRecordCheckIn={handleRecordCheckIn}
-            />
+            userRole === 'member' ? (
+              <MemberAttendanceDashboard
+                user={activeUserDisplay}
+                attendanceRecords={attendanceRecords}
+                onAttendanceMarkedSuccess={(record) => {
+                  setAttendanceRecords([record, ...attendanceRecords]);
+                  setTodayAttendanceMarked(true);
+                  triggerToast(`Attendance Marked: ${record.status}`);
+                }}
+                onNavigateTab={(tab) => setCurrentTab(tab as NavTab)}
+              />
+            ) : (
+              <AdminAttendanceDashboard
+                members={members}
+                offices={offices}
+                attendanceRecords={attendanceRecords}
+                currentAdminName={activeUserDisplay.full_name}
+                onRefreshData={loadSupabaseData}
+              />
+            )
           )}
 
           {/* Dues Tab */}
