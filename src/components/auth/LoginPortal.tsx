@@ -87,7 +87,11 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
       }
     } catch (err: any) {
       console.error('Authentication Error:', err);
-      setErrorMessage(err.message || 'Authentication error. You can also use Quick Launch below.');
+      if (err?.message?.toLowerCase().includes('email not confirmed')) {
+        setErrorMessage('Email not confirmed in Supabase. Please disable "Confirm Email" in your Supabase Dashboard under Authentication -> Providers -> Email, or auto-confirm the user in the Supabase Users list.');
+      } else {
+        setErrorMessage(err.message || 'Authentication error. You can also use Quick Launch below.');
+      }
     } finally {
       setLoading(false);
     }
