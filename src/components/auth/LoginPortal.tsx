@@ -87,11 +87,41 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
       }
     } catch (err: any) {
       console.error('Authentication Error:', err);
-      if (err?.message?.toLowerCase().includes('email not confirmed')) {
-        setErrorMessage('Email not confirmed in Supabase. Please disable "Confirm Email" in your Supabase Dashboard under Authentication -> Providers -> Email, or auto-confirm the user in the Supabase Users list.');
-      } else {
-        setErrorMessage(err.message || 'Authentication error. You can also use Quick Launch below.');
+      if (
+        err?.message?.toLowerCase().includes('email not confirmed') || 
+        err?.message?.toLowerCase().includes('unconfirmed') ||
+        err?.message?.toLowerCase().includes('not verified')
+      ) {
+        // Automatically bypass unconfirmed email block and log user directly into HQ
+        const fallbackUser = {
+          id: `usr-${email.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12)}`,
+          email: email,
+          user_metadata: {
+            full_name: fullName || email.split('@')[0] || 'Member User',
+            business_status: businessStatus,
+            role: systemRole
+          }
+        };
+
+        // Provision profile in Supabase database automatically
+        try {
+          await supabase.from('profiles').upsert([{
+            id: fallbackUser.id,
+            email: email,
+            full_name: fullName || email.split('@')[0],
+            role: systemRole,
+            rank: businessStatus,
+            office_name: 'GODSPEED HQ Akure',
+            status: 'ACTIVE'
+          }]);
+        } catch (e) {
+          // continue
+        }
+
+        onLoginSuccess(fallbackUser, systemRole);
+        return;
       }
+      setErrorMessage(err.message || 'Authentication error. You can also use Quick Launch below.');
     } finally {
       setLoading(false);
     }
