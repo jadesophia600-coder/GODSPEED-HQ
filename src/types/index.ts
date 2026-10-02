@@ -1,5 +1,7 @@
 export type UserRole = 'super_admin' | 'regional_manager' | 'member';
 
+export type BusinessStatus = 'PRO' | 'Distributors' | 'Manager' | 'Senior Manager' | 'Executive Manager' | 'Director';
+
 export type StatusType = 'ACTIVE' | 'PENDING' | 'COMPLETED' | 'APPROVED' | 'REJECTED' | 'INACTIVE' | 'EXCUSED' | 'PRESENT';
 
 export interface Member {
@@ -9,7 +11,7 @@ export interface Member {
   email: string;
   phone: string;
   role: UserRole;
-  rank: 'Diamond Executive' | 'Gold Regional Lead' | 'Silver Team Lead' | 'Bronze Associate' | 'Member';
+  rank: BusinessStatus | string;
   office_id: string;
   office_name: string;
   status: StatusType;

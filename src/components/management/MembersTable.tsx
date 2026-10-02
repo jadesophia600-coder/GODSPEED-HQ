@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
 import { 
   Search, 
-  Filter, 
   Download, 
   UserPlus, 
   ChevronLeft, 
   ChevronRight, 
   Award,
   MoreVertical,
-  Mail,
-  Phone,
   Building
 } from 'lucide-react';
-import { Member, UserRole } from '../../types';
+import type { Member, UserRole } from '../../types';
 import { StatusBadge } from '../ui/StatusBadge';
 
 interface MembersTableProps {
@@ -120,12 +117,13 @@ export const MembersTable: React.FC<MembersTableProps> = ({
             onChange={(e) => { setSelectedRank(e.target.value); setCurrentPage(1); }}
             className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-blue-500"
           >
-            <option value="ALL">All Ranks</option>
-            <option value="Diamond Executive">Diamond Executive</option>
-            <option value="Gold Regional Lead">Gold Regional Lead</option>
-            <option value="Silver Team Lead">Silver Team Lead</option>
-            <option value="Bronze Associate">Bronze Associate</option>
-            <option value="Member">Member</option>
+            <option value="ALL">All Business Statuses</option>
+            <option value="Director">Director</option>
+            <option value="Executive Manager">Executive Manager</option>
+            <option value="Senior Manager">Senior Manager</option>
+            <option value="Manager">Manager</option>
+            <option value="Distributors">Distributors</option>
+            <option value="PRO">PRO</option>
           </select>
         </div>
 
@@ -144,13 +142,13 @@ export const MembersTable: React.FC<MembersTableProps> = ({
         </div>
       </div>
 
-      {/* Desktop & Tablet Table */}
+      {/* Desktop Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-slate-100/80 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
               <th className="py-3 px-4">Member Info</th>
-              <th className="py-3 px-4">Rank & Office</th>
+              <th className="py-3 px-4">Status & Hub</th>
               <th className="py-3 px-4">Status</th>
               <th className="py-3 px-4">Total PV</th>
               <th className="py-3 px-4">Earnings (YTD)</th>
@@ -168,11 +166,17 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                 >
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={m.avatar_url}
-                        alt={m.full_name}
-                        className="w-9 h-9 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-800 flex-shrink-0"
-                      />
+                      {m.avatar_url ? (
+                        <img
+                          src={m.avatar_url}
+                          alt={m.full_name}
+                          className="w-9 h-9 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-800 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs flex-shrink-0">
+                          {m.full_name.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
                       <div>
                         <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {m.full_name}
@@ -186,9 +190,7 @@ export const MembersTable: React.FC<MembersTableProps> = ({
 
                   <td className="py-3 px-4">
                     <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
-                      {m.rank.includes('Gold') || m.rank.includes('Diamond') ? (
-                        <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                      ) : null}
+                      <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                       <span>{m.rank}</span>
                     </div>
                     <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">

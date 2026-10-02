@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Member } from '../../types';
+import type { Member, BusinessStatus } from '../../types';
 import { X, UserPlus } from 'lucide-react';
 
 interface AddMemberModalProps {
@@ -11,7 +11,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAddMe
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [rank, setRank] = useState<Member['rank']>('Bronze Associate');
+  const [rank, setRank] = useState<BusinessStatus>('Distributors');
   const [officeName, setOfficeName] = useState('Global HQ — London');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,7 +31,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAddMe
       health_score: 88,
       downline_count: 0,
       join_date: new Date().toISOString().slice(0, 10),
-      avatar_url: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200`
+      avatar_url: ''
     });
 
     onClose();
@@ -102,17 +102,19 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAddMe
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Leadership Rank
+                Status in the Business
               </label>
               <select
                 value={rank}
-                onChange={(e) => setRank(e.target.value as any)}
+                onChange={(e) => setRank(e.target.value as BusinessStatus)}
                 className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-blue-500"
               >
-                <option value="Bronze Associate">Bronze Associate</option>
-                <option value="Silver Team Lead">Silver Team Lead</option>
-                <option value="Gold Regional Lead">Gold Regional Lead</option>
-                <option value="Member">Member</option>
+                <option value="PRO">PRO</option>
+                <option value="Distributors">Distributors</option>
+                <option value="Manager">Manager</option>
+                <option value="Senior Manager">Senior Manager</option>
+                <option value="Executive Manager">Executive Manager</option>
+                <option value="Director">Director</option>
               </select>
             </div>
 

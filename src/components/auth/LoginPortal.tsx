@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { UserRole } from '../../types';
+import type { UserRole, BusinessStatus } from '../../types';
 import { 
   Zap, 
   Lock, 
@@ -12,8 +12,7 @@ import {
   Building2, 
   UserCheck, 
   AlertCircle,
-  Sparkles,
-  Award
+  Sparkles
 } from 'lucide-react';
 
 interface LoginPortalProps {
@@ -29,15 +28,33 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('super_admin');
+  const [businessStatus, setBusinessStatus] = useState<BusinessStatus>('Director');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Map Business Status to system role for layout scoping
+  const mapStatusToRole = (status: BusinessStatus): UserRole => {
+    switch (status) {
+      case 'Director':
+      case 'Executive Manager':
+        return 'super_admin';
+      case 'Senior Manager':
+      case 'Manager':
+        return 'regional_manager';
+      case 'Distributors':
+      case 'PRO':
+      default:
+        return 'member';
+    }
+  };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setLoading(true);
+
+    const systemRole = mapStatusToRole(businessStatus);
 
     try {
       if (isSignUp) {
@@ -47,14 +64,15 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
           options: {
             data: {
               full_name: fullName,
-              role: selectedRole
+              business_status: businessStatus,
+              role: systemRole
             }
           }
         });
 
         if (error) throw error;
         if (data.user) {
-          onLoginSuccess(data.user, selectedRole);
+          onLoginSuccess(data.user, systemRole);
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -64,13 +82,12 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
 
         if (error) throw error;
         if (data.user) {
-          onLoginSuccess(data.user, selectedRole);
+          onLoginSuccess(data.user, systemRole);
         }
       }
     } catch (err: any) {
       console.error('Authentication Error:', err);
-      // If live credentials fail, allow smooth fallthrough demo access for evaluation
-      setErrorMessage(err.message || 'Authentication error. You can also use Quick Executive Portal Access below.');
+      setErrorMessage(err.message || 'Authentication error. You can also use Quick Launch below.');
     } finally {
       setLoading(false);
     }
@@ -96,8 +113,8 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
           <h1 className="text-2xl font-extrabold tracking-tight text-white font-sans flex items-center justify-center gap-2">
             GODSPEED <span className="text-amber-400 text-xs px-2 py-0.5 bg-amber-400/10 rounded font-mono border border-amber-400/20">HQ</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider font-semibold">
-            Enterprise Business Management Gateway
+          <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold font-mono">
+            BUILDING FUTURE LEADERS
           </p>
         </div>
 
@@ -195,19 +212,22 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
               </div>
             </div>
 
-            {/* Role Selection for Auth */}
+            {/* Status in the Business Dropdown */}
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Portal Permission Level
+                Status in the Business
               </label>
               <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                value={businessStatus}
+                onChange={(e) => setBusinessStatus(e.target.value as BusinessStatus)}
                 className="w-full px-3.5 py-2.5 text-xs bg-slate-900/80 text-white rounded-xl border border-slate-700/80 focus:border-blue-500 outline-none"
               >
-                <option value="super_admin">Super Admin (Executive Command)</option>
-                <option value="regional_manager">Regional Manager (Hub Lead)</option>
-                <option value="member">Standard Member (Team Associate)</option>
+                <option value="PRO">PRO</option>
+                <option value="Distributors">Distributors</option>
+                <option value="Manager">Manager</option>
+                <option value="Senior Manager">Senior Manager</option>
+                <option value="Executive Manager">Executive Manager</option>
+                <option value="Director">Director</option>
               </select>
             </div>
 
@@ -229,24 +249,24 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
 
           </form>
 
-          {/* Quick Demo Access Divider */}
+          {/* Quick Demo Launch Divider */}
           <div className="relative my-6 text-center">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-800" />
             </div>
             <span className="relative px-3 bg-[#0B132B] text-[10px] uppercase font-bold text-slate-400">
-              Or Instant Evaluator Launch
+              Or Instant Launch Status View
             </span>
           </div>
 
-          {/* Quick Demo Portal Buttons */}
+          {/* Quick Demo Launch Buttons */}
           <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => onDemoAccess('super_admin')}
               className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/30 flex flex-col items-center justify-center transition-colors group"
             >
               <Sparkles className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-bold">Super Admin</span>
+              <span className="text-[10px] font-bold">Director</span>
             </button>
 
             <button
@@ -254,7 +274,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
               className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-blue-400 border border-blue-500/30 flex flex-col items-center justify-center transition-colors group"
             >
               <Building2 className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-bold">Regional Lead</span>
+              <span className="text-[10px] font-bold">Manager</span>
             </button>
 
             <button
@@ -262,7 +282,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
               className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 flex flex-col items-center justify-center transition-colors group"
             >
               <UserCheck className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-bold">Member</span>
+              <span className="text-[10px] font-bold">Distributor</span>
             </button>
           </div>
 
