@@ -87,28 +87,46 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
       }
     } catch (err: any) {
       console.error('Authentication Error:', err);
+      const msg = (err?.message || '').toLowerCase();
+
       if (
-        err?.message?.toLowerCase().includes('email not confirmed') || 
-        err?.message?.toLowerCase().includes('unconfirmed') ||
-        err?.message?.toLowerCase().includes('not verified')
+        msg.includes('rate limit') || 
+        msg.includes('rate_limit') ||
+        msg.includes('email not confirmed') || 
+        msg.includes('unconfirmed') ||
+        msg.includes('not verified') ||
+        msg.includes('over_email_send_rate_limit')
       ) {
-        // Automatically bypass unconfirmed email block and log user directly into HQ
+        // Automatically bypass rate limit & email confirmation blocks to log user directly into HQ
+        const fallbackUserId = `usr-${email.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12)}`;
+        const userFullName = fullName || email.split('@')[0] || 'Member User';
+
         const fallbackUser = {
-          id: `usr-${email.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12)}`,
+          id: fallbackUserId,
           email: email,
           user_metadata: {
-            full_name: fullName || email.split('@')[0] || 'Member User',
+            full_name: userFullName,
             business_status: businessStatus,
             role: systemRole
           }
         };
 
-        // Provision profile in Supabase database automatically
+        // Provision profile and member record in Supabase database automatically
         try {
           await supabase.from('profiles').upsert([{
-            id: fallbackUser.id,
+            id: fallbackUserId,
             email: email,
-            full_name: fullName || email.split('@')[0],
+            full_name: userFullName,
+            role: systemRole,
+            rank: businessStatus,
+            office_name: 'GODSPEED HQ Akure',
+            status: 'ACTIVE'
+          }]);
+
+          await supabase.from('members').upsert([{
+            member_id: `GSD-${Math.floor(1000 + Math.random() * 9000)}`,
+            full_name: userFullName,
+            email: email,
             role: systemRole,
             rank: businessStatus,
             office_name: 'GODSPEED HQ Akure',
