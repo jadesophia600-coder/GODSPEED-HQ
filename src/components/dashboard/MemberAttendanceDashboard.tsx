@@ -302,21 +302,21 @@ export const MemberAttendanceDashboard: React.FC<MemberAttendanceDashboardProps>
         </button>
 
         <button
-          onClick={() => onNavigateTab && onNavigateTab('pv')}
+          onClick={() => setShowScannerModal(true)}
           className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl hover:border-amber-500/50 transition-all text-left group"
         >
-          <Award className="w-5 h-5 text-amber-500 mb-2 group-hover:scale-110 transition-transform" />
-          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Submit PV</h4>
-          <p className="text-[11px] text-slate-400">Product volume</p>
+          <QrCode className="w-5 h-5 text-amber-500 mb-2 group-hover:scale-110 transition-transform" />
+          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Scan QR Code</h4>
+          <p className="text-[11px] text-slate-400">Record attendance</p>
         </button>
 
         <button
-          onClick={() => onNavigateTab && onNavigateTab('earnings')}
+          onClick={() => onNavigateTab && onNavigateTab('settings')}
           className="p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl hover:border-purple-500/50 transition-all text-left group"
         >
-          <TrendingUp className="w-5 h-5 text-purple-500 mb-2 group-hover:scale-110 transition-transform" />
-          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">My Earnings</h4>
-          <p className="text-[11px] text-slate-400">Payouts & commissions</p>
+          <ShieldCheck className="w-5 h-5 text-purple-500 mb-2 group-hover:scale-110 transition-transform" />
+          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Settings</h4>
+          <p className="text-[11px] text-slate-400">Account governance</p>
         </button>
       </div>
 

@@ -71,7 +71,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'OVERVIEW',
       items: [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin', 'regional_manager', 'member'] }
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin', 'regional_manager', 'member'] },
+        { id: 'attendance', label: 'Daily Attendance', icon: CalendarCheck, roles: ['super_admin', 'regional_manager', 'member'] }
       ]
     },
     {
@@ -80,21 +81,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'members', label: 'Members', icon: Users, roles: ['super_admin', 'regional_manager'] },
         { id: 'offices', label: 'Offices', icon: Building2, roles: ['super_admin', 'regional_manager'] },
         { id: 'genealogy', label: 'Genealogy', icon: GitFork, roles: ['super_admin', 'regional_manager', 'member'] }
-      ]
-    },
-    {
-      title: 'OPERATIONS',
-      items: [
-        { id: 'attendance', label: 'Attendance', icon: CalendarCheck, roles: ['super_admin', 'regional_manager', 'member'] },
-        { id: 'dues', label: 'Dues', icon: Receipt, roles: ['super_admin', 'regional_manager', 'member'], badge: 'Due' },
-        { id: 'pv', label: 'PV Submissions', icon: CheckSquare, roles: ['super_admin', 'regional_manager', 'member'] }
-      ]
-    },
-    {
-      title: 'FINANCE',
-      items: [
-        { id: 'earnings', label: 'Earnings', icon: TrendingUp, roles: ['super_admin', 'regional_manager', 'member'] },
-        { id: 'financial_reports', label: 'Financial Reports', icon: FileText, roles: ['super_admin'] }
       ]
     },
     {
