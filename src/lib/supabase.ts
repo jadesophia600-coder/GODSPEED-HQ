@@ -323,15 +323,9 @@ export async function validateAndRecordAttendanceToken(
         };
       }
 
-      // Automatically authorize check-in for the scanned office location
-      if (session.office_name) {
-        // Automatically sync target office to the scanned QR session's office location
-        targetOfficeName = session.office_name;
-        targetOfficeId = session.office_id;
-      }
     }
 
-    // 3. Determine check-in status (PRESENT vs LATE)
+    // 3. Determine check-in status (PRESENT vs LATE) & Target Office Location
     const now = new Date();
     const hour = now.getHours();
     const minute = now.getMinutes();
