@@ -323,16 +323,11 @@ export async function validateAndRecordAttendanceToken(
         };
       }
 
-      // Check office authorization if specified
-      if (session.office_name && member.office_name && 
-          session.office_name !== member.office_name &&
-          !member.office_name.toLowerCase().includes('global') && 
-          !session.office_name.toLowerCase().includes('global')) {
-        return {
-          success: false,
-          code: 'WRONG_OFFICE',
-          message: `This QR code is for ${session.office_name}, but your profile is registered at ${member.office_name}.`
-        };
+      // Automatically authorize check-in for the scanned office location
+      if (session.office_name) {
+        // Automatically sync target office to the scanned QR session's office location
+        targetOfficeName = session.office_name;
+        targetOfficeId = session.office_id;
       }
     }
 
@@ -343,7 +338,7 @@ export async function validateAndRecordAttendanceToken(
     const isLate = hour > 9 || (hour === 9 && minute > 15);
     const statusVal = isLate ? 'LATE' : 'PRESENT';
     const checkInTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const targetOfficeName = session?.office_name || member.office_name || 'Global HQ — London';
+    const targetOfficeName = session?.office_name || member.office_name || 'GODSPEED HQ Akure';
     const targetOfficeId = session?.office_id || member.office_id || 'off-01';
 
     // 4. Create the attendance record

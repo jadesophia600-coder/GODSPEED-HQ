@@ -241,8 +241,9 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                 <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Position the QR code inside the frame
                 </p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                  Office: <span className="font-bold text-slate-800 dark:text-slate-200">{currentMember.office_name}</span>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center justify-center gap-1 font-semibold">
+                  <span>📍 Office Location:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{currentMember.office_name || 'GODSPEED HQ Akure'}</span>
                 </p>
               </div>
 
