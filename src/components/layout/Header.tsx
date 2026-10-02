@@ -14,8 +14,8 @@ import {
   Building,
   Award
 } from 'lucide-react';
-import { Member, UserRole, Notification } from '../../types';
-import { SEEDED_NOTIFICATIONS } from '../../lib/supabase';
+import type { Member, UserRole, Notification } from '../../types';
+import { getNotifications } from '../../lib/supabase';
 
 interface HeaderProps {
   pageTitle: string;
@@ -48,13 +48,17 @@ export const Header: React.FC<HeaderProps> = ({
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
-  const [notifications, setNotifications] = useState<Notification[]>(SEEDED_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const roleMenuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifMenuRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  useEffect(() => {
+    getNotifications().then(data => setNotifications(data));
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -121,32 +125,17 @@ export const Header: React.FC<HeaderProps> = ({
               className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-100 dark:bg-slate-800/70 text-slate-800 dark:text-slate-200 rounded-lg border border-transparent focus:border-blue-500 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all outline-none"
             />
           </div>
-
-          {/* Autocomplete dropdown demo */}
-          {searchFocused && searchQuery.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-2 z-50 text-xs">
-              <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase">Quick Results</div>
-              <div className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer flex justify-between">
-                <span className="font-semibold text-slate-800 dark:text-slate-200">Global HQ — London</span>
-                <span className="text-slate-400">Office</span>
-              </div>
-              <div className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer flex justify-between">
-                <span className="font-semibold text-slate-800 dark:text-slate-200">Sophia Chen</span>
-                <span className="text-slate-400">Member (GSD-6604)</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right Actions: Role Switcher, Notifications, Dark Mode, Profile */}
         <div className="flex items-center gap-2 sm:gap-3">
 
-          {/* Role Switcher Pill (For Evaluator Dynamic Demo) */}
+          {/* Role Switcher Pill */}
           <div className="relative" ref={roleMenuRef}>
             <button
               onClick={() => setShowRoleDropdown(!showRoleDropdown)}
               className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 transition-colors"
-              title="Switch demo role view"
+              title="Switch role view"
             >
               <Shield className={`w-3.5 h-3.5 ${userRole === 'super_admin' ? 'text-amber-500' : 'text-blue-500'}`} />
               <span className="capitalize">{userRole.replace('_', ' ')}</span>
@@ -217,20 +206,26 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
 
                 <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                  {notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className={`p-3 text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
-                        !n.read ? 'bg-blue-50/30 dark:bg-blue-950/20' : ''
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">{n.title}</span>
-                        <span className="text-[10px] text-slate-400">{n.timestamp}</span>
+                  {notifications.length > 0 ? (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className={`p-3 text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
+                          !n.read ? 'bg-blue-50/30 dark:bg-blue-950/20' : ''
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{n.title}</span>
+                          <span className="text-[10px] text-slate-400">{n.timestamp}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">{n.message}</p>
                       </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">{n.message}</p>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-xs text-slate-400">
+                      No new notifications
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}
@@ -245,11 +240,17 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
               className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
-              <img
-                src={user.avatar_url}
-                alt={user.full_name}
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-200 dark:ring-slate-700"
-              />
+              {user.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.full_name}
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-200 dark:ring-slate-700"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs">
+                  {user.full_name.slice(0, 2).toUpperCase()}
+                </div>
+              )}
               <div className="hidden md:flex flex-col text-left">
                 <span className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-none flex items-center gap-1">
                   {user.full_name}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Member } from '../../types';
-import { MessageSquare, Send, Hash, Sparkles, User } from 'lucide-react';
+import type { Member } from '../../types';
+import { Hash, Send } from 'lucide-react';
 
 interface ChatViewProps {
   currentUser: Member;
@@ -16,25 +16,7 @@ interface ChatMessage {
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({ currentUser }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'm1',
-      senderName: 'Eleanor Sterling',
-      senderRole: 'Gold Regional Lead',
-      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200',
-      text: 'Global Leadership Summit scheduled for 09:00 AM BST tomorrow. All regional directors please confirm attendance.',
-      timestamp: '09:42 AM'
-    },
-    {
-      id: 'm2',
-      senderName: 'David K. Ross',
-      senderRole: 'Gold Regional Lead',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-      text: 'Americas Hub NYC team confirmed. Q4 PV numbers submitted for pre-review.',
-      timestamp: '10:15 AM'
-    }
-  ]);
-
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
 
   const handleSend = (e: React.FormEvent) => {
@@ -63,7 +45,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ currentUser }) => {
           <Hash className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100"># global-executive-channel</h3>
-            <p className="text-[11px] text-slate-500">Official announcement broadcast & leadership updates</p>
+            <p className="text-[11px] text-slate-500">Official announcement broadcast channel</p>
           </div>
         </div>
 
@@ -74,32 +56,37 @@ export const ChatView: React.FC<ChatViewProps> = ({ currentUser }) => {
 
       {/* Messages Stream */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((m) => (
-          <div key={m.id} className="flex items-start gap-3 group">
-            <img
-              src={m.avatar}
-              alt={m.senderName}
-              className="w-9 h-9 rounded-full object-cover ring-2 ring-slate-200 dark:ring-slate-700 flex-shrink-0"
-            />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{m.senderName}</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-semibold">{m.senderRole}</span>
-                <span className="text-[10px] text-slate-400 font-mono">{m.timestamp}</span>
+        {messages.length > 0 ? (
+          messages.map((m) => (
+            <div key={m.id} className="flex items-start gap-3 group">
+              <div className="w-9 h-9 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs flex-shrink-0">
+                {m.senderName.slice(0, 2).toUpperCase()}
               </div>
-              <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800 max-w-xl">
-                {m.text}
-              </p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{m.senderName}</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-semibold">{m.senderRole}</span>
+                  <span className="text-[10px] text-slate-400 font-mono">{m.timestamp}</span>
+                </div>
+                <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800 max-w-xl">
+                  {m.text}
+                </p>
+              </div>
             </div>
+          ))
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center text-center text-slate-400">
+            <Hash className="w-8 h-8 mb-2 text-slate-300 dark:text-slate-700" />
+            <p className="text-xs">No broadcast messages yet. Type below to send a message.</p>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Input */}
       <form onSubmit={handleSend} className="p-3 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 bg-slate-50/50 dark:bg-slate-950/40">
         <input
           type="text"
-          placeholder="Broadcast a message to executive team..."
+          placeholder="Broadcast a message to team..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           className="flex-1 px-4 py-2 text-xs bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-slate-700 outline-none focus:border-blue-500"
