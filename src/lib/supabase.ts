@@ -44,7 +44,7 @@ export async function getCurrentUser(): Promise<Member | null> {
         role: user.user_metadata?.role || 'member',
         rank: user.user_metadata?.business_status || 'Director',
         office_id: 'off-01',
-        office_name: 'Global HQ — London',
+        office_name: 'GODSPEED Office',
         status: 'ACTIVE',
         avatar_url: '',
         join_date: new Date().toISOString().slice(0, 10),
@@ -64,7 +64,7 @@ export async function getCurrentUser(): Promise<Member | null> {
       role: data.role || 'member',
       rank: data.rank || 'Director',
       office_id: data.office_id || '',
-      office_name: data.office_name || 'Global HQ — London',
+      office_name: data.office_name || 'GODSPEED Office',
       status: data.status || 'ACTIVE',
       avatar_url: data.avatar_url || '',
       join_date: data.join_date || new Date().toISOString().slice(0, 10),
@@ -332,7 +332,7 @@ export async function validateAndRecordAttendanceToken(
     const isLate = hour > 9 || (hour === 9 && minute > 15);
     const statusVal = isLate ? 'LATE' : 'PRESENT';
     const checkInTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const targetOfficeName = session?.office_name || member.office_name || 'GODSPEED HQ Akure';
+    const targetOfficeName = session?.office_name || member.office_name || 'GODSPEED Office';
     const targetOfficeId = session?.office_id || member.office_id || 'off-01';
 
     // 4. Create the attendance record

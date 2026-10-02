@@ -15,7 +15,7 @@ export const DashboardHero: React.FC<DashboardHeroProps> = ({
   todayAttendanceMarked,
   onQuickMarkAttendance
 }) => {
-  const [selectedOffice, setSelectedOffice] = useState(user.office_name || 'Global HQ — London');
+  const [selectedOffice, setSelectedOffice] = useState(user.office_name || 'GODSPEED Office');
   const [selectedEvent, setSelectedEvent] = useState('Weekly Leadership Summit');
   const [isMarking, setIsMarking] = useState(false);
 
@@ -148,7 +148,7 @@ export const DashboardHero: React.FC<DashboardHeroProps> = ({
                 onChange={(e) => setSelectedOffice(e.target.value)}
                 className="px-3 py-2 text-xs bg-slate-900/90 text-white rounded-xl border border-slate-700 outline-none"
               >
-                <option value="Global HQ — London">Global HQ — London</option>
+                <option value="GODSPEED Office">GODSPEED Office</option>
                 <option value="Americas Hub — New York">Americas Hub — New York</option>
                 <option value="APAC Region — Singapore">APAC Region — Singapore</option>
                 <option value="EMEA Hub — Zurich">EMEA Hub — Zurich</option>

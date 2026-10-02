@@ -31,7 +31,7 @@ const PERFORMANCE_DATA = [
 ];
 
 const OFFICE_YIELD_PIE = [
-  { name: 'Global HQ — London', value: 342000, color: '#2563EB' },
+  { name: 'GODSPEED Office', value: 342000, color: '#2563EB' },
   { name: 'Americas Hub — NYC', value: 289000, color: '#3B82F6' },
   { name: 'APAC — Singapore', value: 265000, color: '#D97706' },
   { name: 'EMEA — Zurich', value: 178000, color: '#10B981' }
@@ -217,7 +217,7 @@ export const DataVisualizationSection: React.FC<DataVisualizationSectionProps> =
         </div>
 
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
-          <span>Top Hub: Global HQ London</span>
+          <span>Top Hub: GODSPEED Office</span>
           <span className="font-bold text-blue-600 dark:text-blue-400">32.8%</span>
         </div>
       </div>

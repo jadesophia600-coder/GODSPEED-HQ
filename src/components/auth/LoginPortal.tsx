@@ -119,7 +119,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
             full_name: userFullName,
             role: systemRole,
             rank: businessStatus,
-            office_name: 'GODSPEED HQ Akure',
+            office_name: 'GODSPEED Office',
             status: 'ACTIVE'
           }]);
 
@@ -129,7 +129,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
             email: email,
             role: systemRole,
             rank: businessStatus,
-            office_name: 'GODSPEED HQ Akure',
+            office_name: 'GODSPEED Office',
             status: 'ACTIVE'
           }]);
         } catch (e) {

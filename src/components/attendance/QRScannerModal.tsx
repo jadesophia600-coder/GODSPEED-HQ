@@ -243,7 +243,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                 </p>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center justify-center gap-1 font-semibold">
                   <span>📍 Office Location:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{currentMember.office_name || 'GODSPEED HQ Akure'}</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{currentMember.office_name || 'GODSPEED Office'}</span>
                 </p>
               </div>
 

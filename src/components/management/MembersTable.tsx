@@ -134,7 +134,7 @@ export const MembersTable: React.FC<MembersTableProps> = ({
             className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-blue-500"
           >
             <option value="ALL">All Offices</option>
-            <option value="Global HQ — London">Global HQ — London</option>
+            <option value="GODSPEED Office">GODSPEED Office</option>
             <option value="Americas Hub — New York">Americas Hub — New York</option>
             <option value="APAC Region — Singapore">APAC Region — Singapore</option>
             <option value="EMEA Hub — Zurich">EMEA Hub — Zurich</option>

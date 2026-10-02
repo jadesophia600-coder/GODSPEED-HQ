@@ -12,7 +12,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAddMe
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [rank, setRank] = useState<BusinessStatus>('Distributors');
-  const [officeName, setOfficeName] = useState('Global HQ — London');
+  const [officeName, setOfficeName] = useState('GODSPEED Office');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +127,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ onClose, onAddMe
                 onChange={(e) => setOfficeName(e.target.value)}
                 className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:border-blue-500"
               >
-                <option value="Global HQ — London">Global HQ — London</option>
+                <option value="GODSPEED Office">GODSPEED Office</option>
                 <option value="Americas Hub — New York">Americas Hub — New York</option>
                 <option value="APAC Region — Singapore">APAC Region — Singapore</option>
                 <option value="EMEA Hub — Zurich">EMEA Hub — Zurich</option>

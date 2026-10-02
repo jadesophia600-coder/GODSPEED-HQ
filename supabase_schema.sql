@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     role TEXT DEFAULT 'member',
     rank TEXT DEFAULT 'Director',
     office_id TEXT,
-    office_name TEXT DEFAULT 'Global HQ — London',
+    office_name TEXT DEFAULT 'GODSPEED Office',
     status TEXT DEFAULT 'ACTIVE',
     avatar_url TEXT,
     join_date DATE DEFAULT CURRENT_DATE,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS public.members (
     role TEXT DEFAULT 'member',
     rank TEXT DEFAULT 'Director',
     office_id TEXT,
-    office_name TEXT DEFAULT 'Global HQ — London',
+    office_name TEXT DEFAULT 'GODSPEED Office',
     status TEXT DEFAULT 'ACTIVE',
     avatar_url TEXT,
     join_date DATE DEFAULT CURRENT_DATE,
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS public.pv_submissions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     member_id TEXT,
     member_name TEXT NOT NULL,
-    office_name TEXT DEFAULT 'Global HQ — London',
+    office_name TEXT DEFAULT 'GODSPEED Office',
     pv_amount NUMERIC NOT NULL,
     submission_date DATE DEFAULT CURRENT_DATE,
     product_category TEXT NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS public.dues (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     member_id TEXT,
     member_name TEXT NOT NULL,
-    office_name TEXT DEFAULT 'Global HQ — London',
+    office_name TEXT DEFAULT 'GODSPEED Office',
     month_year TEXT NOT NULL,
     amount NUMERIC NOT NULL,
     due_date DATE NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS public.attendance (
     member_id TEXT,
     member_name TEXT NOT NULL,
     office_id TEXT,
-    office_name TEXT DEFAULT 'Global HQ — London',
+    office_name TEXT DEFAULT 'GODSPEED Office',
     date DATE DEFAULT CURRENT_DATE,
     check_in_time TEXT NOT NULL,
     event_type TEXT DEFAULT 'Daily Attendance',
@@ -252,7 +252,7 @@ CREATE TRIGGER on_auth_user_created
 -- Seed Offices
 INSERT INTO public.offices (name, code, location, city, country, member_count, attendance_rate, dues_collected, total_pv, performance_score, manager_name, established_year)
 VALUES
-('Global HQ — London', 'LON-01', 'Mayfair Executive Tower', 'London', 'United Kingdom', 420, 94.2, 124500, 342000, 98, 'Eleanor Sterling', 2019),
+('GODSPEED Office', 'GSD-01', 'Executive Corporate Hub', 'HQ', 'International', 420, 94.2, 124500, 342000, 98, 'Eleanor Sterling', 2019),
 ('Americas Hub — New York', 'NYC-01', '730 5th Avenue, Manhattan', 'New York', 'United States', 380, 91.8, 98400, 289000, 95, 'David K. Ross', 2020),
 ('APAC Region — Singapore', 'SGP-01', 'Marina Bay Financial Centre', 'Singapore', 'Singapore', 290, 96.5, 87200, 265000, 96, 'Mei Ling Tan', 2021),
 ('EMEA Hub — Zurich', 'ZRH-01', 'Bahnhofstrasse 45', 'Zurich', 'Switzerland', 158, 89.4, 45000, 178000, 92, 'Adrian von Berg', 2022)
@@ -261,11 +261,11 @@ ON CONFLICT DO NOTHING;
 -- Seed Members
 INSERT INTO public.members (member_id, full_name, email, phone, role, rank, office_name, status, pv_total, earnings_ytd, health_score, downline_count)
 VALUES
-('GSD-9901', 'Marcus Vance', 'm.vance@godspeedhq.com', '+1 (555) 382-9901', 'super_admin', 'Director', 'Global HQ — London', 'ACTIVE', 14850, 184500, 94, 342),
-('GSD-8802', 'Eleanor Sterling', 'e.sterling@godspeedhq.com', '+44 20 7946 0912', 'regional_manager', 'Executive Manager', 'Global HQ — London', 'ACTIVE', 9200, 96500, 91, 128),
+('GSD-9901', 'Marcus Vance', 'm.vance@godspeedhq.com', '+1 (555) 382-9901', 'super_admin', 'Director', 'GODSPEED Office', 'ACTIVE', 14850, 184500, 94, 342),
+('GSD-8802', 'Eleanor Sterling', 'e.sterling@godspeedhq.com', '+44 20 7946 0912', 'regional_manager', 'Executive Manager', 'GODSPEED Office', 'ACTIVE', 9200, 96500, 91, 128),
 ('GSD-7703', 'David K. Ross', 'd.ross@godspeedhq.com', '+1 212 555 0192', 'regional_manager', 'Senior Manager', 'Americas Hub — New York', 'ACTIVE', 8400, 84200, 88, 94),
 ('GSD-6604', 'Sophia Chen', 's.chen@godspeedhq.com', '+65 6789 0123', 'member', 'Manager', 'APAC Region — Singapore', 'ACTIVE', 5100, 48900, 85, 42),
-('GSD-5505', 'Alexander Wright', 'a.wright@godspeedhq.com', '+44 20 7946 0881', 'member', 'Distributors', 'Global HQ — London', 'ACTIVE', 4800, 42300, 90, 36),
+('GSD-5505', 'Alexander Wright', 'a.wright@godspeedhq.com', '+44 20 7946 0881', 'member', 'Distributors', 'GODSPEED Office', 'ACTIVE', 4800, 42300, 90, 36),
 ('GSD-4406', 'Beatrice Lawson', 'b.lawson@godspeedhq.com', '+1 212 555 0451', 'member', 'PRO', 'Americas Hub — New York', 'PENDING', 1250, 12400, 76, 12)
 ON CONFLICT DO NOTHING;
 
@@ -273,14 +273,14 @@ ON CONFLICT DO NOTHING;
 INSERT INTO public.pv_submissions (member_name, office_name, pv_amount, submission_date, product_category, receipt_ref, status, approver_note)
 VALUES
 ('Sophia Chen', 'APAC Region — Singapore', 1450, '2026-10-01', 'Enterprise Vitality Packs', 'REC-2026-9812', 'APPROVED', 'Verified in ledger'),
-('Alexander Wright', 'Global HQ — London', 2200, '2026-10-02', 'Corporate Wellness System', 'REC-2026-9890', 'PENDING', 'Awaiting review'),
+('Alexander Wright', 'GODSPEED Office', 2200, '2026-10-02', 'Corporate Wellness System', 'REC-2026-9890', 'PENDING', 'Awaiting review'),
 ('Beatrice Lawson', 'Americas Hub — New York', 850, '2026-09-28', 'Executive Health Kit', 'REC-2026-9743', 'APPROVED', 'System verified')
 ON CONFLICT DO NOTHING;
 
 -- Seed Dues
 INSERT INTO public.dues (member_name, office_name, month_year, amount, due_date, status, payment_method)
 VALUES
-('Eleanor Sterling', 'Global HQ — London', 'October 2026', 150, '2026-10-05', 'COMPLETED', 'Corporate Direct Debit'),
+('Eleanor Sterling', 'GODSPEED Office', 'October 2026', 150, '2026-10-05', 'COMPLETED', 'Corporate Direct Debit'),
 ('David K. Ross', 'Americas Hub — New York', 'October 2026', 150, '2026-10-05', 'COMPLETED', 'Visa Corporate'),
 ('Sophia Chen', 'APAC Region — Singapore', 'October 2026', 150, '2026-10-05', 'PENDING', 'Pending Invoice')
 ON CONFLICT DO NOTHING;
@@ -288,8 +288,8 @@ ON CONFLICT DO NOTHING;
 -- Seed Attendance
 INSERT INTO public.attendance (member_name, office_name, date, check_in_time, event_type, status)
 VALUES
-('Marcus Vance', 'Global HQ — London', '2026-10-02', '08:45 AM', 'Weekly Leadership Summit', 'ACTIVE'),
-('Eleanor Sterling', 'Global HQ — London', '2026-10-02', '08:52 AM', 'Weekly Leadership Summit', 'ACTIVE'),
+('Marcus Vance', 'GODSPEED Office', '2026-10-02', '08:45 AM', 'Weekly Leadership Summit', 'ACTIVE'),
+('Eleanor Sterling', 'GODSPEED Office', '2026-10-02', '08:52 AM', 'Weekly Leadership Summit', 'ACTIVE'),
 ('Sophia Chen', 'APAC Region — Singapore', '2026-10-01', '09:10 AM', 'APAC Strategy Briefing', 'ACTIVE')
 ON CONFLICT DO NOTHING;
 

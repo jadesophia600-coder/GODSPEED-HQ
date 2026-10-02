@@ -106,7 +106,7 @@ export const MemberAttendanceDashboard: React.FC<MemberAttendanceDashboardProps>
               </div>
               <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
                 <Building2 className="w-4 h-4 text-emerald-400" />
-                <span>{user.office_name || 'GODSPEED HQ Akure'}</span>
+                <span>{user.office_name || 'GODSPEED Office'}</span>
               </div>
             </div>
           </div>

@@ -41,7 +41,7 @@ export const AdminQRGeneratorModal: React.FC<AdminQRGeneratorModalProps> = ({
 
   const selectedOffice = offices.find(o => o.id === selectedOfficeId) || {
     id: 'off-01',
-    name: 'Global HQ — London',
+    name: 'GODSPEED Office',
     code: 'LON-01'
   };
 
