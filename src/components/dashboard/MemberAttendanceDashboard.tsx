@@ -33,6 +33,7 @@ export const MemberAttendanceDashboard: React.FC<MemberAttendanceDashboardProps>
   onNavigateTab
 }) => {
   const [showScannerModal, setShowScannerModal] = useState<boolean>(false);
+  const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
   const todayStr = new Date().toISOString().slice(0, 10);
   
@@ -63,6 +64,18 @@ export const MemberAttendanceDashboard: React.FC<MemberAttendanceDashboardProps>
   const presentDays = myRecords.filter(r => r.status === 'PRESENT' || r.status === 'ACTIVE').length;
   const lateDays = myRecords.filter(r => r.status === 'LATE').length;
   const attendanceRate = totalCheckIns > 0 ? Math.round((presentDays / totalCheckIns) * 100) : 100;
+
+  // Auto-launch camera QR scanner directly when member lands on site / clicks link
+  React.useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const isDirectScanLink = searchParams.get('scan') === 'true' || window.location.hash.includes('scan');
+    
+    // If user clicked direct scan link or has not yet marked today's attendance, open scanner immediately!
+    if (isDirectScanLink || !todayRecord) {
+      const timer = setTimeout(() => setShowScannerModal(true), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [todayRecord]);
 
   const handleScanSuccess = (record: AttendanceRecord) => {
     setShowScannerModal(false);

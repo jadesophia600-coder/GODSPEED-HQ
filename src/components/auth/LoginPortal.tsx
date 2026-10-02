@@ -49,12 +49,41 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
     }
   };
 
+  const saveMemberToSupabaseDB = async (userId: string, userEmail: string, name: string, roleVal: UserRole, statusVal: BusinessStatus) => {
+    try {
+      const memberCode = `GSD-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      await supabase.from('profiles').upsert([{
+        id: userId,
+        email: userEmail,
+        full_name: name,
+        role: roleVal,
+        rank: statusVal,
+        office_name: 'GODSPEED Office',
+        status: 'ACTIVE'
+      }]);
+
+      await supabase.from('members').upsert([{
+        member_id: memberCode,
+        full_name: name,
+        email: userEmail,
+        role: roleVal,
+        rank: statusVal,
+        office_name: 'GODSPEED Office',
+        status: 'ACTIVE'
+      }]);
+    } catch (err) {
+      console.error('Error saving member to Supabase:', err);
+    }
+  };
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setLoading(true);
 
     const systemRole = mapStatusToRole(businessStatus);
+    const resolvedName = fullName || email.split('@')[0] || 'Member User';
 
     try {
       if (isSignUp) {
@@ -63,7 +92,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
           password,
           options: {
             data: {
-              full_name: fullName,
+              full_name: resolvedName,
               business_status: businessStatus,
               role: systemRole
             }
@@ -72,7 +101,9 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
 
         if (error) throw error;
         if (data.user) {
+          await saveMemberToSupabaseDB(data.user.id, email, resolvedName, systemRole, businessStatus);
           onLoginSuccess(data.user, systemRole);
+          return;
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -82,7 +113,9 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
 
         if (error) throw error;
         if (data.user) {
+          await saveMemberToSupabaseDB(data.user.id, email, resolvedName, systemRole, businessStatus);
           onLoginSuccess(data.user, systemRole);
+          return;
         }
       }
     } catch (err: any) {
