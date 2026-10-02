@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { id: 'members', label: 'Members', icon: Users, roles: ['super_admin', 'regional_manager'] },
         { id: 'offices', label: 'Offices', icon: Building2, roles: ['super_admin', 'regional_manager'] },
-        { id: 'genealogy', label: 'Genealogy', icon: GitFork, roles: ['super_admin', 'regional_manager', 'member'] }
+        { id: 'genealogy', label: 'Team Members', icon: GitFork, roles: ['super_admin', 'regional_manager', 'member'] }
       ]
     },
     {

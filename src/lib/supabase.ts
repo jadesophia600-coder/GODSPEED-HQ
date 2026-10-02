@@ -448,3 +448,50 @@ export async function getNotifications(): Promise<Notification[]> {
     return [];
   }
 }
+
+export async function sendBroadcastAnnouncement(
+  userName: string,
+  userRank: string,
+  messageText: string
+): Promise<ActivityItem | null> {
+  try {
+    const timestampStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newActivity = {
+      type: 'profile_updated',
+      title: `Official Team Broadcast by ${userName} (${userRank})`,
+      description: messageText,
+      timestamp: timestampStr,
+      user_name: userName,
+      status: 'ACTIVE'
+    };
+
+    const newNotification = {
+      title: `Team Announcement from ${userName}`,
+      message: messageText,
+      timestamp: timestampStr,
+      read: false,
+      type: 'gold'
+    };
+
+    const { data, error } = await supabase
+      .from('activities')
+      .insert([newActivity])
+      .select()
+      .single();
+
+    await supabase.from('notifications').insert([newNotification]);
+
+    if (error || !data) {
+      return {
+        id: `act-${Date.now()}`,
+        ...newActivity,
+        status: 'ACTIVE'
+      } as ActivityItem;
+    }
+
+    return data as ActivityItem;
+  } catch (err) {
+    console.error('Error sending broadcast announcement:', err);
+    return null;
+  }
+}

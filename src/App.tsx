@@ -392,7 +392,7 @@ export function App() {
       case 'dashboard': return 'Executive HQ Overview';
       case 'members': return 'Member Directory & Ranks';
       case 'offices': return 'Regional Office Hubs';
-      case 'genealogy': return 'Genealogy Downline Tree';
+      case 'genealogy': return 'Team Members & Downline Network';
       case 'attendance': return 'Attendance Verification & Check-In';
       case 'dues': return 'Administrative Dues Ledger';
       case 'pv': return 'PV Volume Submissions';
