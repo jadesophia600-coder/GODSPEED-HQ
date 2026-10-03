@@ -157,9 +157,12 @@ export function App() {
     };
   }, []);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   // Load live data from Supabase
   const loadSupabaseData = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const [
         userRes,
@@ -201,8 +204,9 @@ export function App() {
       const isMarked = attRes.some(r => r.date === todayStr);
       setTodayAttendanceMarked(isMarked);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading Supabase tables:', err);
+      setLoadError(err?.message || 'Unable to load members');
     } finally {
       setIsLoading(false);
     }
@@ -702,6 +706,9 @@ export function App() {
                 attendanceRecords={attendanceRecords}
                 currentAdminName={activeUserDisplay.full_name}
                 onRefreshData={loadSupabaseData}
+                isLoading={isLoading}
+                error={loadError}
+                onSelectMember={setSelectedMember}
               />
             )
           )}
