@@ -90,18 +90,48 @@ export function App() {
     }
   }, [darkMode]);
 
-  // Check Supabase session on startup
+  // Check Supabase session & local persistent session on startup
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setIsAuthenticated(true);
-        loadSupabaseData();
+    const initSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setIsAuthenticated(true);
+          if (session.user.email) {
+            localStorage.setItem('godspeed_user_email', session.user.email);
+            localStorage.setItem('godspeed_is_authenticated', 'true');
+          }
+          await loadSupabaseData();
+          return;
+        }
+
+        // Fallback to local persistent session if previously logged in
+        const storedAuth = localStorage.getItem('godspeed_is_authenticated');
+        const storedEmail = localStorage.getItem('godspeed_user_email');
+        const storedRole = localStorage.getItem('godspeed_user_role') as UserRole;
+
+        if (storedAuth === 'true' && storedEmail) {
+          setIsAuthenticated(true);
+          if (storedRole) setUserRole(storedRole);
+          await loadSupabaseData();
+          return;
+        }
+      } catch (e) {
+        console.error('Error restoring session:', e);
+      } finally {
+        setIsLoading(false);
       }
-    });
+    };
+
+    initSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setIsAuthenticated(true);
+        if (session.user.email) {
+          localStorage.setItem('godspeed_user_email', session.user.email);
+          localStorage.setItem('godspeed_is_authenticated', 'true');
+        }
         loadSupabaseData();
       }
     });
@@ -167,13 +197,20 @@ export function App() {
 
   const handleRoleChange = (newRole: UserRole) => {
     setUserRole(newRole);
+    localStorage.setItem('godspeed_user_role', newRole);
     if (currentUser) {
       setCurrentUser({ ...currentUser, role: newRole });
     }
     triggerToast(`View context updated to ${newRole.replace('_', ' ').toUpperCase()}`);
   };
 
-  const handleLoginSuccess = (_user: any, role: UserRole) => {
+  const handleLoginSuccess = (user: any, role: UserRole) => {
+    const userEmail = user?.email || localStorage.getItem('godspeed_user_email') || '';
+    if (userEmail) {
+      localStorage.setItem('godspeed_user_email', userEmail);
+    }
+    localStorage.setItem('godspeed_user_role', role);
+    localStorage.setItem('godspeed_is_authenticated', 'true');
     setUserRole(role);
     setIsAuthenticated(true);
     loadSupabaseData();
@@ -181,6 +218,8 @@ export function App() {
   };
 
   const handleDemoAccess = (role: UserRole) => {
+    localStorage.setItem('godspeed_user_role', role);
+    localStorage.setItem('godspeed_is_authenticated', 'true');
     setUserRole(role);
     setIsAuthenticated(true);
     loadSupabaseData();
@@ -189,6 +228,9 @@ export function App() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    localStorage.removeItem('godspeed_is_authenticated');
+    localStorage.removeItem('godspeed_user_email');
+    localStorage.removeItem('godspeed_user_role');
     setIsAuthenticated(false);
     setCurrentUser(null);
     triggerToast('Signed out of GODSPEED HQ.');
@@ -477,6 +519,7 @@ export function App() {
           darkMode={darkMode}
           onToggleDarkMode={() => setDarkMode(!darkMode)}
           onOpenProfileModal={() => setSelectedMember(activeUserDisplay)}
+          onSignOut={handleSignOut}
           sidebarCollapsed={sidebarCollapsed}
         />
 

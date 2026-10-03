@@ -27,6 +27,7 @@ interface HeaderProps {
   darkMode: boolean;
   onToggleDarkMode: () => void;
   onOpenProfileModal: () => void;
+  onSignOut?: () => void;
   sidebarCollapsed: boolean;
 }
 
@@ -40,6 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
   darkMode,
   onToggleDarkMode,
   onOpenProfileModal,
+  onSignOut,
   sidebarCollapsed
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -286,7 +288,10 @@ export const Header: React.FC<HeaderProps> = ({
                   </button>
 
                   <button
-                    onClick={() => setShowProfileDropdown(false)}
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      if (onSignOut) onSignOut();
+                    }}
                     className="w-full px-4 py-2 text-left text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2"
                   >
                     <LogOut className="w-3.5 h-3.5" />

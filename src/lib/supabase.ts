@@ -25,54 +25,106 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function getCurrentUser(): Promise<Member | null> {
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return null;
+    const storedEmail = localStorage.getItem('godspeed_user_email') || '';
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    const targetUserId = user?.id;
+    const targetEmail = user?.email || storedEmail;
 
-    if (error || !data) {
-      const userEmail = user.email || localStorage.getItem('godspeed_user_email') || '';
-      return {
-        id: user.id,
-        member_id: `GSD-${user.id.slice(0, 4).toUpperCase()}`,
-        full_name: user.user_metadata?.full_name || userEmail.split('@')[0] || 'Member User',
-        email: userEmail,
-        phone: '',
-        role: user.user_metadata?.role || 'member',
-        rank: user.user_metadata?.business_status || 'Distributors',
-        office_id: 'off-01',
-        office_name: 'GODSPEED Office',
-        status: 'ACTIVE',
-        avatar_url: '',
-        join_date: new Date().toISOString().slice(0, 10),
-        pv_total: 0,
-        earnings_ytd: 0,
-        health_score: 100,
-        downline_count: 0
-      };
+    if (!targetUserId && !targetEmail) return null;
+
+    // 1. Attempt lookup by user.id in profiles
+    if (targetUserId) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', targetUserId)
+        .single();
+
+      if (!error && data) {
+        return {
+          id: data.id,
+          member_id: data.member_id || `GSD-${data.id.slice(0, 4)}`,
+          full_name: data.full_name || targetEmail || 'User',
+          email: data.email || targetEmail || '',
+          phone: data.phone || '',
+          role: data.role || 'member',
+          rank: data.rank || 'Distributors',
+          office_id: data.office_id || 'off-01',
+          office_name: data.office_name || 'GODSPEED Office',
+          status: data.status || 'ACTIVE',
+          avatar_url: data.avatar_url || '',
+          join_date: data.join_date || new Date().toISOString().slice(0, 10),
+          pv_total: data.pv_total || 0,
+          earnings_ytd: data.earnings_ytd || 0,
+          health_score: data.health_score || 100,
+          downline_count: data.downline_count || 0
+        };
+      }
     }
 
+    // 2. Attempt lookup by email in profiles
+    if (targetEmail) {
+      const { data: profileByEmail } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', targetEmail)
+        .single();
+
+      if (profileByEmail) {
+        return {
+          id: profileByEmail.id,
+          member_id: profileByEmail.member_id || `GSD-${profileByEmail.id.slice(0, 4)}`,
+          full_name: profileByEmail.full_name || targetEmail.split('@')[0],
+          email: profileByEmail.email || targetEmail,
+          phone: profileByEmail.phone || '',
+          role: profileByEmail.role || 'member',
+          rank: profileByEmail.rank || 'Distributors',
+          office_id: profileByEmail.office_id || 'off-01',
+          office_name: profileByEmail.office_name || 'GODSPEED Office',
+          status: profileByEmail.status || 'ACTIVE',
+          avatar_url: profileByEmail.avatar_url || '',
+          join_date: profileByEmail.join_date || new Date().toISOString().slice(0, 10),
+          pv_total: profileByEmail.pv_total || 0,
+          earnings_ytd: profileByEmail.earnings_ytd || 0,
+          health_score: profileByEmail.health_score || 100,
+          downline_count: profileByEmail.downline_count || 0
+        };
+      }
+
+      // 3. Attempt lookup by email in members table
+      const { data: memberByEmail } = await supabase
+        .from('members')
+        .select('*')
+        .eq('email', targetEmail)
+        .single();
+
+      if (memberByEmail) {
+        return memberByEmail as Member;
+      }
+    }
+
+    // Fallback constructed member object
+    const resolvedId = targetUserId || `usr-${targetEmail.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12)}`;
+    const storedRole = (localStorage.getItem('godspeed_user_role') as any) || 'member';
+
     return {
-      id: data.id,
-      member_id: data.member_id || `GSD-${data.id.slice(0, 4)}`,
-      full_name: data.full_name || user.email || 'User',
-      email: data.email || user.email || '',
-      phone: data.phone || '',
-      role: data.role || 'member',
-      rank: data.rank || 'Distributors',
-      office_id: data.office_id || '',
-      office_name: data.office_name || 'GODSPEED Office',
-      status: data.status || 'ACTIVE',
-      avatar_url: data.avatar_url || '',
-      join_date: data.join_date || new Date().toISOString().slice(0, 10),
-      pv_total: data.pv_total || 0,
-      earnings_ytd: data.earnings_ytd || 0,
-      health_score: data.health_score || 100,
-      downline_count: data.downline_count || 0
+      id: resolvedId,
+      member_id: `GSD-${resolvedId.slice(0, 4).toUpperCase()}`,
+      full_name: user?.user_metadata?.full_name || targetEmail.split('@')[0] || 'Member User',
+      email: targetEmail,
+      phone: '',
+      role: user?.user_metadata?.role || storedRole,
+      rank: user?.user_metadata?.business_status || 'Distributors',
+      office_id: 'off-01',
+      office_name: 'GODSPEED Office',
+      status: 'ACTIVE',
+      avatar_url: '',
+      join_date: new Date().toISOString().slice(0, 10),
+      pv_total: 0,
+      earnings_ytd: 0,
+      health_score: 100,
+      downline_count: 0
     };
   } catch (err) {
     console.error('Error fetching current user profile from Supabase:', err);
