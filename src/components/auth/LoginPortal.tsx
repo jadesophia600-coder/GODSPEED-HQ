@@ -25,6 +25,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
   onDemoAccess
 }) => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [accountRole, setAccountRole] = useState<UserRole>('member');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -123,7 +124,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
     setErrorMessage(null);
     setLoading(true);
 
-    const systemRole = mapStatusToRole(businessStatus);
+    const systemRole = isSignUp ? accountRole : mapStatusToRole(businessStatus);
     const resolvedName = fullName || email.split('@')[0] || 'Member User';
 
     // Store chosen rank & user credentials in local storage
@@ -294,21 +295,63 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
           <form onSubmit={handleAuthSubmit} className="space-y-4">
             
             {isSignUp && (
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    required={isSignUp}
-                    placeholder="Marcus Vance"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs bg-slate-900/80 text-white rounded-xl border border-slate-700/80 focus:border-blue-500 outline-none transition-all"
-                  />
+              <>
+                {/* Account Type Selector (Admin vs Member) */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">
+                    Select Account Privilege / Position
+                  </label>
+                  <div className="grid grid-cols-2 gap-3 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setAccountRole('member')}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 text-center transition-all ${
+                        accountRole === 'member'
+                          ? 'bg-blue-600/20 border-blue-500 text-white shadow-lg shadow-blue-500/10'
+                          : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-300'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${accountRole === 'member' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                        <UserCheck className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold mt-0.5">Member Account</span>
+                      <span className="text-[10px] opacity-75 leading-tight">Standard team member, check-in & downlines</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setAccountRole('super_admin')}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 text-center transition-all ${
+                        accountRole === 'super_admin'
+                          ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-lg shadow-amber-500/10'
+                          : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-300'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${accountRole === 'super_admin' ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'}`}>
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold mt-0.5">Admin Account</span>
+                      <span className="text-[10px] opacity-75 leading-tight">Executive dashboard & team administration</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required={isSignUp}
+                      placeholder="Marcus Vance"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs bg-slate-900/80 text-white rounded-xl border border-slate-700/80 focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              </>
             )}
 
             <div>
@@ -375,13 +418,21 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 transition-all duration-200 shadow-lg shadow-blue-900/40 flex items-center justify-center gap-2 group disabled:opacity-50"
+              className={`w-full py-3 px-4 rounded-xl text-xs font-bold text-white transition-all duration-200 shadow-lg flex items-center justify-center gap-2 group disabled:opacity-50 ${
+                isSignUp && accountRole === 'super_admin' 
+                  ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/40' 
+                  : 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/40'
+              }`}
             >
               {loading ? (
                 <span>Authenticating with Supabase...</span>
               ) : (
                 <>
-                  <span>{isSignUp ? 'Create Corporate Account' : 'Authenticate & Launch HQ'}</span>
+                  <span>
+                    {isSignUp 
+                      ? (accountRole === 'super_admin' ? 'Create Admin Executive Account' : 'Create Team Member Account') 
+                      : 'Authenticate & Launch HQ'}
+                  </span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </>
               )}
