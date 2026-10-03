@@ -73,7 +73,7 @@ export const AdminAttendanceDashboard: React.FC<AdminAttendanceDashboardProps> =
   const recordsForDate = realtimeRecords.filter(r => r.date === selectedDate);
   const presentCount = recordsForDate.filter(r => r.status === 'PRESENT' || r.status === 'ACTIVE').length;
   const lateCount = recordsForDate.filter(r => r.status === 'LATE').length;
-  const totalMembersCount = members.length > 0 ? members.length : 150;
+  const totalMembersCount = members.length;
   const notMarkedCount = Math.max(0, totalMembersCount - (presentCount + lateCount));
   const attendanceRate = totalMembersCount > 0 
     ? Math.round(((presentCount + lateCount) / totalMembersCount) * 100) 

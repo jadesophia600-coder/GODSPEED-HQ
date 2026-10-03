@@ -729,6 +729,7 @@ export function App() {
               onChangeRole={handleRoleChange}
               darkMode={darkMode}
               onToggleDarkMode={() => setDarkMode(!darkMode)}
+              onRefreshUser={loadSupabaseData}
             />
           )}
 
