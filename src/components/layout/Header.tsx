@@ -84,12 +84,8 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header 
-      className={`sticky top-0 z-20 h-16 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'
-      }`}
-    >
-      <div className="h-full px-4 lg:px-6 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-20 h-16 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-all duration-300">
+      <div className="h-full px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto flex items-center justify-between gap-4">
         
         {/* Left: Mobile Toggle & Page Header / Breadcrumb */}
         <div className="flex items-center gap-3">
