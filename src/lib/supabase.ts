@@ -10,7 +10,8 @@ import type {
   EarningsRecord, 
   HealthMetric, 
   ActivityItem,
-  Notification
+  Notification,
+  GenealogyNode
 } from '../types';
 
 // Active Supabase Credentials
@@ -246,17 +247,207 @@ export async function updateUserProfile(
 
 export async function getMembers(): Promise<Member[]> {
   try {
-    const { data, error } = await supabase
+    // 1. Fetch from members table
+    const { data: membersData } = await supabase
       .from('members')
       .select('*')
       .order('full_name', { ascending: true });
 
-    if (error || !data) return [];
-    return data as Member[];
+    // 2. Fetch from profiles table
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('*');
+
+    // 3. Local storage registered members fallback
+    const localRegStr = localStorage.getItem('godspeed_registered_members') || '[]';
+    let localReg: Member[] = [];
+    try {
+      localReg = JSON.parse(localRegStr);
+    } catch (e) {}
+
+    const memberMap = new Map<string, Member>();
+
+    // Add local registered members
+    localReg.forEach(m => {
+      const key = (m.email || m.id).toLowerCase();
+      memberMap.set(key, {
+        ...m,
+        member_id: cleanMemberId(m.member_id, m.email || m.id),
+        status: m.status || 'ACTIVE'
+      });
+    });
+
+    // Add profiles data
+    if (profilesData) {
+      profilesData.forEach((p: any) => {
+        const key = (p.email || p.id).toLowerCase();
+        memberMap.set(key, {
+          id: p.id,
+          member_id: cleanMemberId(p.member_id, p.email || p.id),
+          full_name: p.full_name || p.email?.split('@')[0] || 'App Member',
+          email: p.email || '',
+          phone: p.phone || '',
+          role: p.role || 'member',
+          rank: p.rank || 'Distributors',
+          office_id: p.office_id || 'off-01',
+          office_name: p.office_name || 'GODSPEED Office',
+          status: p.status || 'ACTIVE',
+          avatar_url: p.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(p.full_name || p.email || 'Member')}`,
+          join_date: p.join_date || new Date().toISOString().slice(0, 10),
+          pv_total: p.pv_total || 0,
+          earnings_ytd: p.earnings_ytd || 0,
+          health_score: p.health_score || 100,
+          downline_count: p.downline_count || 0,
+          sponsor_id: p.sponsor_id
+        });
+      });
+    }
+
+    // Add members table data
+    if (membersData) {
+      membersData.forEach((m: any) => {
+        const key = (m.email || m.id).toLowerCase();
+        const existing = memberMap.get(key);
+        memberMap.set(key, {
+          id: m.id || existing?.id || `usr-${key}`,
+          member_id: cleanMemberId(m.member_id, m.email || m.id),
+          full_name: m.full_name || existing?.full_name || key.split('@')[0],
+          email: m.email || existing?.email || '',
+          phone: m.phone || existing?.phone || '',
+          role: m.role || existing?.role || 'member',
+          rank: m.rank || existing?.rank || 'Distributors',
+          office_id: m.office_id || existing?.office_id || 'off-01',
+          office_name: m.office_name || existing?.office_name || 'GODSPEED Office',
+          status: m.status || existing?.status || 'ACTIVE',
+          avatar_url: m.avatar_url || existing?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(m.full_name || key)}`,
+          join_date: m.join_date || existing?.join_date || new Date().toISOString().slice(0, 10),
+          pv_total: m.pv_total || existing?.pv_total || 0,
+          earnings_ytd: m.earnings_ytd || existing?.earnings_ytd || 0,
+          health_score: m.health_score || existing?.health_score || 100,
+          downline_count: m.downline_count || existing?.downline_count || 0,
+          sponsor_id: m.sponsor_id || existing?.sponsor_id
+        });
+      });
+    }
+
+    return Array.from(memberMap.values());
   } catch (err) {
     console.error('Error fetching members from Supabase:', err);
     return [];
   }
+}
+
+export async function addDownlineMember(sponsorEmail: string, downlineData: Partial<Member>): Promise<{ success: boolean; error?: string }> {
+  try {
+    const downlineEmail = downlineData.email || '';
+    const downlineId = downlineData.id || `usr-${Date.now()}`;
+    const cleanId = cleanMemberId(downlineData.member_id, downlineEmail);
+
+    // Save to local storage downline map for sponsor
+    const localKey = `godspeed_downlines_${sponsorEmail.toLowerCase()}`;
+    const existingStr = localStorage.getItem(localKey) || '[]';
+    let existingList: string[] = [];
+    try { existingList = JSON.parse(existingStr); } catch (e) {}
+    if (!existingList.includes(downlineEmail)) {
+      existingList.push(downlineEmail);
+      localStorage.setItem(localKey, JSON.stringify(existingList));
+    }
+
+    // Save to registered members local storage
+    const regKey = 'godspeed_registered_members';
+    const regStr = localStorage.getItem(regKey) || '[]';
+    let regList: Member[] = [];
+    try { regList = JSON.parse(regStr); } catch (e) {}
+    const existsInReg = regList.find(m => m.email.toLowerCase() === downlineEmail.toLowerCase());
+    if (!existsInReg) {
+      const newMemberObj: Member = {
+        id: downlineId,
+        member_id: cleanId,
+        full_name: downlineData.full_name || downlineEmail.split('@')[0],
+        email: downlineEmail,
+        phone: downlineData.phone || '',
+        role: downlineData.role || 'member',
+        rank: downlineData.rank || 'PRO',
+        office_id: 'off-01',
+        office_name: downlineData.office_name || 'GODSPEED Office',
+        status: 'ACTIVE',
+        avatar_url: downlineData.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(downlineData.full_name || downlineEmail)}`,
+        join_date: new Date().toISOString().slice(0, 10),
+        sponsor_id: sponsorEmail,
+        pv_total: 0,
+        earnings_ytd: 0,
+        health_score: 100,
+        downline_count: 0
+      };
+      regList.push(newMemberObj);
+      localStorage.setItem(regKey, JSON.stringify(regList));
+    }
+
+    // Upsert into Supabase profiles & members
+    await supabase.from('profiles').upsert([{
+      id: downlineId,
+      email: downlineEmail,
+      full_name: downlineData.full_name,
+      rank: downlineData.rank || 'PRO',
+      role: 'member',
+      member_id: cleanId,
+      office_name: downlineData.office_name || 'GODSPEED Office',
+      status: 'ACTIVE',
+      sponsor_id: sponsorEmail
+    }], { onConflict: 'id' });
+
+    await supabase.from('members').upsert([{
+      member_id: cleanId,
+      full_name: downlineData.full_name,
+      email: downlineEmail,
+      role: 'member',
+      rank: downlineData.rank || 'PRO',
+      office_name: downlineData.office_name || 'GODSPEED Office',
+      status: 'ACTIVE',
+      sponsor_id: sponsorEmail
+    }], { onConflict: 'email' });
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error adding downline in Supabase:', err);
+    return { success: false, error: err?.message || 'Failed to add downline' };
+  }
+}
+
+export function buildGenealogyTree(rootUser: Member, allMembers: Member[], level: number = 1, visited: Set<string> = new Set()): GenealogyNode {
+  const rootKey = (rootUser.email || rootUser.id).toLowerCase();
+  visited.add(rootKey);
+
+  // Retrieve saved local downline emails for this user
+  const localKey = `godspeed_downlines_${rootKey}`;
+  const localStr = localStorage.getItem(localKey) || '[]';
+  let localDownlineEmails: string[] = [];
+  try { localDownlineEmails = JSON.parse(localStr); } catch (e) {}
+
+  const directDownlines = allMembers.filter(m => {
+    const childKey = (m.email || m.id).toLowerCase();
+    if (visited.has(childKey)) return false;
+    
+    const isSponsoring = m.sponsor_id?.toLowerCase() === rootKey || m.sponsor_id?.toLowerCase() === rootUser.id.toLowerCase();
+    const isLocal = localDownlineEmails.some(e => e.toLowerCase() === childKey);
+    return isSponsoring || isLocal;
+  });
+
+  const childrenNodes: GenealogyNode[] = directDownlines.map(child => buildGenealogyTree(child, allMembers, level + 1, new Set(visited)));
+
+  return {
+    id: rootUser.id,
+    member_id: cleanMemberId(rootUser.member_id, rootUser.email || rootUser.id),
+    name: rootUser.full_name,
+    rank: rootUser.rank || 'Distributors',
+    role: rootUser.role,
+    office: rootUser.office_name || 'GODSPEED Office',
+    pv: rootUser.pv_total || 0,
+    avatar: rootUser.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(rootUser.full_name)}`,
+    status: rootUser.status || 'ACTIVE',
+    level: level,
+    children: childrenNodes
+  };
 }
 
 export async function getOffices(): Promise<Office[]> {

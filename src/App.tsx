@@ -29,7 +29,9 @@ import {
   getAttendanceRecords,
   getEarningsRecords,
   getHealthMetrics,
-  getActivities
+  getActivities,
+  addDownlineMember,
+  buildGenealogyTree
 } from './lib/supabase';
 
 import { LoginPortal } from './components/auth/LoginPortal';
@@ -632,18 +634,17 @@ export function App() {
           {/* Genealogy Tab */}
           {currentTab === 'genealogy' && (
             <GenealogyTree
-              rootNode={{
-                id: activeUserDisplay.id,
-                member_id: activeUserDisplay.member_id,
-                name: activeUserDisplay.full_name,
-                rank: activeUserDisplay.rank,
-                role: activeUserDisplay.role,
-                office: activeUserDisplay.office_name,
-                pv: activeUserDisplay.pv_total,
-                avatar: activeUserDisplay.avatar_url,
-                status: activeUserDisplay.status,
-                level: 1,
-                children: []
+              rootNode={buildGenealogyTree(activeUserDisplay, members)}
+              currentUser={activeUserDisplay}
+              registeredMembers={members}
+              onAddDownline={async (downlineData) => {
+                const res = await addDownlineMember(activeUserDisplay.email, downlineData);
+                if (res.success) {
+                  await loadSupabaseData();
+                  triggerToast(`Successfully attached ${downlineData.full_name || 'downline'} to team network!`);
+                } else {
+                  triggerToast(res.error || 'Failed to add downline');
+                }
               }}
               onSelectMemberNode={(id) => {
                 const found = members.find(m => m.id === id);
