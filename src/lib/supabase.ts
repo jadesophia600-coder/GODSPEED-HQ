@@ -24,7 +24,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // ==========================================
 
 export function cleanMemberId(rawId?: string, seedStr?: string): string {
-  if (rawId && !rawId.includes('USR-') && !rawId.includes('usr-') && !rawId.endsWith('-') && rawId.startsWith('GSD-') && rawId.length >= 7) {
+  if (rawId && !rawId.toLowerCase().includes('usr') && !rawId.endsWith('-') && rawId.startsWith('GSD-') && rawId.length >= 7) {
     return rawId;
   }
   let hash = 0;
@@ -41,6 +41,7 @@ export async function getCurrentUser(): Promise<Member | null> {
   try {
     const storedEmail = localStorage.getItem('godspeed_user_email') || '';
     const storedRank = localStorage.getItem('godspeed_user_rank') || '';
+    const storedAvatar = localStorage.getItem('godspeed_user_avatar') || '';
     const { data: { user } } = await supabase.auth.getUser();
 
     const targetUserId = user?.id;
@@ -59,6 +60,10 @@ export async function getCurrentUser(): Promise<Member | null> {
         .single();
 
       if (!error && data) {
+        const resolvedAvatar = data.avatar_url || storedAvatar;
+        if (data.avatar_url) localStorage.setItem('godspeed_user_avatar', data.avatar_url);
+        if (data.rank) localStorage.setItem('godspeed_user_rank', data.rank);
+
         return {
           id: data.id,
           member_id: cleanMemberId(data.member_id, data.email || data.id),
@@ -70,7 +75,7 @@ export async function getCurrentUser(): Promise<Member | null> {
           office_id: data.office_id || 'off-01',
           office_name: data.office_name || 'GODSPEED Office',
           status: data.status || 'ACTIVE',
-          avatar_url: data.avatar_url || '',
+          avatar_url: resolvedAvatar,
           join_date: data.join_date || new Date().toISOString().slice(0, 10),
           pv_total: data.pv_total || 0,
           earnings_ytd: data.earnings_ytd || 0,
@@ -89,6 +94,10 @@ export async function getCurrentUser(): Promise<Member | null> {
         .single();
 
       if (profileByEmail) {
+        const resolvedAvatar = profileByEmail.avatar_url || storedAvatar;
+        if (profileByEmail.avatar_url) localStorage.setItem('godspeed_user_avatar', profileByEmail.avatar_url);
+        if (profileByEmail.rank) localStorage.setItem('godspeed_user_rank', profileByEmail.rank);
+
         return {
           id: profileByEmail.id,
           member_id: cleanMemberId(profileByEmail.member_id, targetEmail),
@@ -100,7 +109,7 @@ export async function getCurrentUser(): Promise<Member | null> {
           office_id: profileByEmail.office_id || 'off-01',
           office_name: profileByEmail.office_name || 'GODSPEED Office',
           status: profileByEmail.status || 'ACTIVE',
-          avatar_url: profileByEmail.avatar_url || '',
+          avatar_url: resolvedAvatar,
           join_date: profileByEmail.join_date || new Date().toISOString().slice(0, 10),
           pv_total: profileByEmail.pv_total || 0,
           earnings_ytd: profileByEmail.earnings_ytd || 0,
@@ -117,10 +126,12 @@ export async function getCurrentUser(): Promise<Member | null> {
         .single();
 
       if (memberByEmail) {
+        const resolvedAvatar = memberByEmail.avatar_url || storedAvatar;
         return {
           ...memberByEmail,
           member_id: cleanMemberId(memberByEmail.member_id, targetEmail),
-          rank: memberByEmail.rank || registeredRank
+          rank: memberByEmail.rank || registeredRank,
+          avatar_url: resolvedAvatar
         } as Member;
       }
     }
@@ -132,7 +143,7 @@ export async function getCurrentUser(): Promise<Member | null> {
     return {
       id: resolvedId,
       member_id: cleanMemberId('', targetEmail),
-      full_name: user?.user_metadata?.full_name || targetEmail.split('@')[0] || 'Member User',
+      full_name: user?.user_metadata?.full_name || localStorage.getItem('godspeed_user_name') || targetEmail.split('@')[0] || 'Member User',
       email: targetEmail,
       phone: '',
       role: user?.user_metadata?.role || storedRole,
@@ -140,7 +151,7 @@ export async function getCurrentUser(): Promise<Member | null> {
       office_id: 'off-01',
       office_name: 'GODSPEED Office',
       status: 'ACTIVE',
-      avatar_url: '',
+      avatar_url: storedAvatar,
       join_date: new Date().toISOString().slice(0, 10),
       pv_total: 0,
       earnings_ytd: 0,
@@ -160,6 +171,12 @@ export async function updateUserProfile(
   try {
     const nowIso = new Date().toISOString();
 
+    // Store in localStorage for instant persistence
+    if (updates.avatar_url) localStorage.setItem('godspeed_user_avatar', updates.avatar_url);
+    if (updates.rank) localStorage.setItem('godspeed_user_rank', updates.rank);
+    if (updates.email) localStorage.setItem('godspeed_user_email', updates.email);
+    if (updates.full_name) localStorage.setItem('godspeed_user_name', updates.full_name);
+
     // 1. Update profiles table
     const profilePayload: any = { updated_at: nowIso };
     if (updates.full_name !== undefined) profilePayload.full_name = updates.full_name;
@@ -168,6 +185,11 @@ export async function updateUserProfile(
     if (updates.avatar_url !== undefined) profilePayload.avatar_url = updates.avatar_url;
     if (updates.rank !== undefined) profilePayload.rank = updates.rank;
     if (updates.office_name !== undefined) profilePayload.office_name = updates.office_name;
+    
+    // Clean member_id if updating profile
+    if (updates.email || userId) {
+      profilePayload.member_id = cleanMemberId('', updates.email || userId);
+    }
 
     const { error: profileErr } = await supabase
       .from('profiles')
@@ -188,6 +210,9 @@ export async function updateUserProfile(
     if (updates.avatar_url !== undefined) memberPayload.avatar_url = updates.avatar_url;
     if (updates.rank !== undefined) memberPayload.rank = updates.rank;
     if (updates.office_name !== undefined) memberPayload.office_name = updates.office_name;
+    if (updates.email || userId) {
+      memberPayload.member_id = cleanMemberId('', updates.email || userId);
+    }
 
     if (updates.email) {
       await supabase

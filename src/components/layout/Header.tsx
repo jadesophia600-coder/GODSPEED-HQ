@@ -15,7 +15,7 @@ import {
   Award
 } from 'lucide-react';
 import type { Member, UserRole, Notification } from '../../types';
-import { getNotifications } from '../../lib/supabase';
+import { getNotifications, cleanMemberId } from '../../lib/supabase';
 
 interface HeaderProps {
   pageTitle: string;
@@ -242,15 +242,15 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
               className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
-              {user.avatar_url ? (
+              {(user.avatar_url || localStorage.getItem('godspeed_user_avatar')) ? (
                 <img
-                  src={user.avatar_url}
+                  src={user.avatar_url || localStorage.getItem('godspeed_user_avatar') || ''}
                   alt={user.full_name}
-                  className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-200 dark:ring-slate-700"
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-500/40 shadow-sm"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs">
-                  {user.full_name.slice(0, 2).toUpperCase()}
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shadow-sm">
+                  {user.full_name ? user.full_name.slice(0, 2).toUpperCase() : 'GS'}
                 </div>
               )}
               <div className="hidden md:flex flex-col text-left">
@@ -259,7 +259,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {user.rank === 'Diamond Executive' && <Award className="w-3 h-3 text-amber-500 fill-amber-400 inline" />}
                 </span>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
-                  {user.member_id}
+                  {cleanMemberId(user.member_id, user.email || user.id)}
                 </span>
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
@@ -271,7 +271,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{user.full_name}</p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">{user.email}</p>
                   <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-bold">
-                    {user.rank}
+                    {user.rank || localStorage.getItem('godspeed_user_rank') || 'Distributors'}
                   </div>
                 </div>
 

@@ -139,7 +139,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
     await triggerSaveProfile();
   };
 
-  const activeAvatar = imagePreview || avatarUrl || member.avatar_url;
+  const activeAvatar = imagePreview || avatarUrl || member.avatar_url || localStorage.getItem('godspeed_user_avatar') || '';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
