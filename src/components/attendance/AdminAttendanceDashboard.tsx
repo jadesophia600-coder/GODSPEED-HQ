@@ -73,22 +73,35 @@ export const AdminAttendanceDashboard: React.FC<AdminAttendanceDashboardProps> =
   const recordsForDate = realtimeRecords.filter(r => r.date === selectedDate);
   const presentCount = recordsForDate.filter(r => r.status === 'PRESENT' || r.status === 'ACTIVE').length;
   const lateCount = recordsForDate.filter(r => r.status === 'LATE').length;
+  const absentCount = recordsForDate.filter(r => r.status === 'ABSENT').length;
   const totalMembersCount = members.length;
-  const notMarkedCount = Math.max(0, totalMembersCount - (presentCount + lateCount));
+  const notMarkedCount = Math.max(0, totalMembersCount - (presentCount + lateCount + absentCount));
   const attendanceRate = totalMembersCount > 0 
     ? Math.round(((presentCount + lateCount) / totalMembersCount) * 100) 
     : 0;
 
+  // Recently registered members sorted by join_date or fallback timestamp
+  const sortedRecentMembers = [...members].sort((a, b) => {
+    const dateA = a.join_date || '2026-01-01';
+    const dateB = b.join_date || '2026-01-01';
+    return dateB.localeCompare(dateA);
+  }).slice(0, 6);
+
   // Build rows for table (combining members with attendance records)
   const fullAttendanceRows = members.map(m => {
     const rec = recordsForDate.find(r => r.member_id === m.id || r.member_name === m.full_name);
+    let statusVal = 'NOT MARKED';
+    if (rec) {
+      statusVal = rec.status === 'ACTIVE' ? 'PRESENT' : rec.status;
+    }
+
     return {
       id: m.id,
       member_id: m.member_id,
       member_name: m.full_name,
-      office_name: m.office_name,
+      office_name: m.office_name || 'GODSPEED Office',
       check_in_time: rec ? rec.check_in_time : '—',
-      status: rec ? rec.status : 'NOT MARKED',
+      status: statusVal,
       date: selectedDate
     };
   });
@@ -123,139 +136,197 @@ export const AdminAttendanceDashboard: React.FC<AdminAttendanceDashboardProps> =
         { day: 'Fri', Present: 0, Late: 0 },
       ];
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'GOOD MORNING';
+    if (hour < 18) return 'GOOD AFTERNOON';
+    return 'GOOD EVENING';
+  };
+
   return (
     <div className="space-y-6">
       
-      {/* Top Header & Primary Generator CTA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-card">
+      {/* 1. TOP HEADER GREETING BANNER */}
+      <div className="bg-gradient-to-r from-slate-900 via-[#0B132B] to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <CalendarCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            Admin Attendance Management Hub
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Monitor real-time office attendance, generate QR sessions, and track member check-ins.
+          <div className="text-xs font-bold text-blue-400 uppercase tracking-widest font-mono mb-1">
+            {getGreeting()}, {currentAdminName.toUpperCase()}
+          </div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-white flex items-center gap-2">
+            <CalendarCheck className="w-7 h-7 text-amber-400" />
+            ORGANIZATION ATTENDANCE COMMAND CENTER
+          </h1>
+          <p className="text-xs text-slate-300 mt-1">
+            Real-time workforce monitoring, daily QR session management, and five-day attendance tracking.
           </p>
         </div>
 
-        <button
-          onClick={() => setShowQRGenerator(true)}
-          className="px-5 py-3 rounded-xl font-extrabold text-xs text-white bg-blue-600 hover:bg-blue-500 transition-all duration-200 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 self-start sm:self-auto transform hover:scale-[1.02]"
-        >
-          <QrCode className="w-4 h-4" />
-          <span>GENERATE ATTENDANCE QR</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowQRGenerator(true)}
+            className="px-5 py-3 rounded-xl font-extrabold text-xs text-white bg-blue-600 hover:bg-blue-500 transition-all duration-200 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transform hover:scale-[1.02]"
+          >
+            <QrCode className="w-4 h-4" />
+            <span>GENERATE ATTENDANCE QR</span>
+          </button>
+        </div>
       </div>
 
-      {/* Overview Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-card">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span>Total Members</span>
-            <Users className="w-4 h-4 text-blue-500" />
+      {/* 2. ORGANIZATION OVERVIEW (4 MAJOR STATS + NOT MARKED) */}
+      <div className="space-y-2">
+        <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest font-mono">
+          ORGANIZATION OVERVIEW — TODAY ({new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-card">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
+              <span>TOTAL MEMBERS</span>
+              <Users className="w-4 h-4 text-blue-500" />
+            </div>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 font-mono">
+              {totalMembersCount}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-0.5">Active registered members</p>
           </div>
-          <div className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">
-            {totalMembersCount}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">Active workforce</p>
-        </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-card">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span>Present Today</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-card">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
+              <span>PRESENT</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            </div>
+            <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
+              {presentCount}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-0.5">On-time check-ins</p>
           </div>
-          <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
-            {presentCount}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">On-time check-ins</p>
-        </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-card">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span>Late Today</span>
-            <Clock className="w-4 h-4 text-amber-500" />
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-card">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
+              <span>LATE</span>
+              <Clock className="w-4 h-4 text-amber-500" />
+            </div>
+            <div className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 font-mono">
+              {lateCount}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-0.5">After 09:15 AM</p>
           </div>
-          <div className="text-2xl font-extrabold text-amber-600 dark:text-amber-400">
-            {lateCount}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">After 09:15 AM</p>
-        </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-card">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span>Not Yet Marked</span>
-            <AlertCircle className="w-4 h-4 text-slate-400" />
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-card">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
+              <span>ABSENT</span>
+              <AlertCircle className="w-4 h-4 text-rose-500" />
+            </div>
+            <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400 font-mono">
+              {absentCount}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-0.5">Closed session absences</p>
           </div>
-          <div className="text-2xl font-extrabold text-slate-600 dark:text-slate-400">
-            {notMarkedCount}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">Pending check-in</p>
-        </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-card">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
-            <span>Attendance Rate</span>
-            <TrendingUp className="w-4 h-4 text-purple-500" />
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-card col-span-2 sm:col-span-1">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
+              <span>NOT MARKED</span>
+              <Clock className="w-4 h-4 text-slate-400" />
+            </div>
+            <div className="text-2xl font-extrabold text-slate-600 dark:text-slate-300 font-mono">
+              {notMarkedCount}
+            </div>
+            <p className="text-[10px] text-slate-400 mt-0.5">Session open pending</p>
           </div>
-          <div className="text-2xl font-extrabold text-purple-600 dark:text-purple-400">
-            {attendanceRate}%
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">Daily turnout</p>
-        </div>
 
+        </div>
       </div>
 
-      {/* Attendance Trend Analytics */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-card">
-        <div className="flex items-center justify-between mb-4">
+      {/* 3. ATTENDANCE CONTROL PANEL */}
+      <div className="bg-white dark:bg-slate-900 border border-blue-500/30 dark:border-blue-800/40 rounded-2xl p-5 shadow-card space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-blue-500" />
-              Weekly Attendance Analysis
+            <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <QrCode className="w-4 h-4 text-blue-500" />
+              ATTENDANCE CONTROL PANEL
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Present vs Late attendance comparison across all office hubs
+              Manage today's active QR attendance session for your organization hub.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <span className="flex items-center gap-1 text-emerald-500">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Present
-            </span>
-            <span className="flex items-center gap-1 text-amber-500">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Late
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-500">Hub:</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+              {offices[0]?.name || 'GODSPEED HQ Akure'}
             </span>
           </div>
         </div>
 
-        <div className="h-56 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-              <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} />
-              <YAxis stroke="#94A3B8" fontSize={11} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#0F172A',
-                  borderColor: '#1E293B',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  color: '#FFF'
-                }}
-              />
-              <Bar dataKey="Present" fill="#10B981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Late" fill="#F59E0B" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+          <div className="flex items-center gap-3">
+            <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+            <div>
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                TODAY'S SESSION: <span className="text-emerald-500 font-mono">ACTIVE</span>
+              </div>
+              <div className="text-[11px] text-slate-500 font-mono">
+                Date: {selectedDate} • Threshold: 09:15 AM
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setShowQRGenerator(true)}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors shadow-sm flex items-center gap-1.5"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              GENERATE / DISPLAY QR
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* WEEKLY ATTENDANCE TRACKER SECTION */}
+      {/* 4. RECENTLY REGISTERED MEMBERS */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-card space-y-3">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Users className="w-4 h-4 text-amber-500" />
+              RECENTLY REGISTERED MEMBERS
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Newest registered members automatically synchronized from Supabase Auth & Member DB.
+            </p>
+          </div>
+          <span className="text-xs font-bold text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+            {members.length} Total Registered
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {sortedRecentMembers.map(m => (
+            <div key={m.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 flex items-center gap-3">
+              {m.avatar_url ? (
+                <img src={m.avatar_url} alt={m.full_name} className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-500/30 flex-shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs flex-shrink-0">
+                  {m.full_name.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">{m.full_name}</div>
+                <div className="text-[10px] text-slate-500 font-mono truncate">{m.member_id} • {m.rank}</div>
+                <div className="text-[10px] text-blue-600 dark:text-blue-400 font-mono font-semibold mt-0.5">
+                  Registered {m.join_date ? new Date(m.join_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'recently'}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 5. FIVE-DAY ATTENDANCE TRACKER SECTION */}
       <WeeklyAttendanceSection
         attendanceRecords={realtimeRecords}
         totalMembersCount={totalMembersCount}
+        allMembers={members}
         isAdmin={true}
       />
 

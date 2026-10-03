@@ -626,6 +626,41 @@ export interface WeeklyAttendanceSummary {
   dailyBreakdown: { day: string; date: string; present: number; late: number; unmarked: number }[];
 }
 
+export interface FiveWorkingDay {
+  day: 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI';
+  date: string; // YYYY-MM-DD
+  monthDayLabel: string; // e.g. Sep 28
+  isToday: boolean;
+  isPast: boolean;
+}
+
+export function getCurrentFiveWorkingDays(refDateStr?: string): FiveWorkingDay[] {
+  const ref = refDateStr ? new Date(refDateStr) : new Date();
+  const todayStr = new Date().toISOString().slice(0, 10);
+  
+  const dayNum = ref.getDay(); // 0 is Sun, 1 is Mon...
+  const distanceToMon = dayNum === 0 ? -6 : 1 - dayNum;
+  const mon = new Date(ref);
+  mon.setDate(ref.getDate() + distanceToMon);
+
+  const days: ('MON' | 'TUE' | 'WED' | 'THU' | 'FRI')[] = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
+  
+  return days.map((day, idx) => {
+    const d = new Date(mon);
+    d.setDate(mon.getDate() + idx);
+    const dateStr = d.toISOString().slice(0, 10);
+    const monthDayLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    
+    return {
+      day,
+      date: dateStr,
+      monthDayLabel,
+      isToday: dateStr === todayStr,
+      isPast: dateStr < todayStr
+    };
+  });
+}
+
 export function getWeeklyAttendanceData(attendanceRecords: AttendanceRecord[], totalMembersCount: number): WeeklyAttendanceSummary[] {
   const weeksMap = new Map<string, AttendanceRecord[]>();
 
@@ -635,12 +670,12 @@ export function getWeeklyAttendanceData(attendanceRecords: AttendanceRecord[], t
     const dayNum = d.getDay() === 0 ? 7 : d.getDay(); // 1 (Mon) to 7 (Sun)
     const mon = new Date(d);
     mon.setDate(d.getDate() - (dayNum - 1));
-    const sun = new Date(mon);
-    sun.setDate(mon.getDate() + 6);
+    const fri = new Date(mon);
+    fri.setDate(mon.getDate() + 4);
 
     const monStr = mon.toISOString().slice(0, 10);
-    const sunStr = sun.toISOString().slice(0, 10);
-    const weekKey = `${monStr} to ${sunStr}`;
+    const friStr = fri.toISOString().slice(0, 10);
+    const weekKey = `${monStr} to ${friStr}`;
 
     if (!weeksMap.has(weekKey)) {
       weeksMap.set(weekKey, []);
@@ -653,14 +688,14 @@ export function getWeeklyAttendanceData(attendanceRecords: AttendanceRecord[], t
     const dayNum = d.getDay() === 0 ? 7 : d.getDay();
     const mon = new Date(d);
     mon.setDate(d.getDate() - (dayNum - 1));
-    const sun = new Date(mon);
-    sun.setDate(mon.getDate() + 6);
-    const weekKey = `${mon.toISOString().slice(0, 10)} to ${sun.toISOString().slice(0, 10)}`;
+    const fri = new Date(mon);
+    fri.setDate(mon.getDate() + 4);
+    const weekKey = `${mon.toISOString().slice(0, 10)} to ${fri.toISOString().slice(0, 10)}`;
     weeksMap.set(weekKey, []);
   }
 
   const summaries: WeeklyAttendanceSummary[] = [];
-  const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
   weeksMap.forEach((recs, weekKey) => {
     const [startStr, endStr] = weekKey.split(' to ');
@@ -706,6 +741,49 @@ export function getWeeklyAttendanceData(attendanceRecords: AttendanceRecord[], t
   });
 
   return summaries.sort((a, b) => (b.startDate > a.startDate ? 1 : -1));
+}
+
+export async function closeSessionAndFinalizeAbsences(sessionId: string, dateStr: string, members: Member[]): Promise<boolean> {
+  try {
+    // 1. Update session status to CLOSED in Supabase
+    if (sessionId) {
+      await supabase
+        .from('attendance_sessions')
+        .update({ status: 'CLOSED' })
+        .eq('id', sessionId);
+    }
+
+    // 2. Fetch existing records for dateStr
+    const { data: existingRecords } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('date', dateStr);
+
+    const checkedInMemberIds = new Set((existingRecords || []).map((r: any) => r.member_id || r.member_name));
+
+    // 3. Find active members who did not check in and mark them ABSENT
+    const absentPayloads = members
+      .filter(m => m.status === 'ACTIVE' && !checkedInMemberIds.has(m.id) && !checkedInMemberIds.has(m.full_name))
+      .map(m => ({
+        member_id: m.id,
+        member_name: m.full_name,
+        office_id: m.office_id || 'off-01',
+        office_name: m.office_name || 'GODSPEED Office',
+        date: dateStr,
+        check_in_time: '—',
+        event_type: 'Daily QR Attendance',
+        status: 'ABSENT'
+      }));
+
+    if (absentPayloads.length > 0) {
+      await supabase.from('attendance').upsert(absentPayloads);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error closing session and finalizing absences:', err);
+    return false;
+  }
 }
 
 export async function getAttendanceSessions(): Promise<AttendanceSession[]> {

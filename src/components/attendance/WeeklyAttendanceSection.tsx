@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AttendanceRecord, Member } from '../../types';
-import { getWeeklyAttendanceData, WeeklyAttendanceSummary } from '../../lib/supabase';
+import { getWeeklyAttendanceData, getCurrentFiveWorkingDays } from '../../lib/supabase';
 import { 
   Calendar, 
   TrendingUp, 
@@ -10,8 +10,11 @@ import {
   CalendarCheck,
   ChevronLeft,
   ChevronRight,
-  Filter,
-  BarChart2
+  BarChart2,
+  Users,
+  Check,
+  X,
+  Minus
 } from 'lucide-react';
 import { StatusBadge } from '../ui/StatusBadge';
 
@@ -19,6 +22,7 @@ interface WeeklyAttendanceSectionProps {
   attendanceRecords: AttendanceRecord[];
   totalMembersCount: number;
   currentUser?: Member;
+  allMembers?: Member[];
   isAdmin?: boolean;
 }
 
@@ -26,6 +30,7 @@ export const WeeklyAttendanceSection: React.FC<WeeklyAttendanceSectionProps> = (
   attendanceRecords,
   totalMembersCount,
   currentUser,
+  allMembers = [],
   isAdmin = false
 }) => {
   const weeklySummaries = getWeeklyAttendanceData(attendanceRecords, totalMembersCount);
@@ -33,6 +38,8 @@ export const WeeklyAttendanceSection: React.FC<WeeklyAttendanceSectionProps> = (
 
   const currentWeek = weeklySummaries[selectedWeekIndex] || weeklySummaries[0];
   if (!currentWeek) return null;
+
+  const fiveDays = getCurrentFiveWorkingDays(currentWeek.startDate);
 
   // Filter records for user if in member mode
   const userRecords = currentUser 
@@ -47,10 +54,12 @@ export const WeeklyAttendanceSection: React.FC<WeeklyAttendanceSectionProps> = (
         <div>
           <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <CalendarCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            Weekly Attendance Tracking & Database Logs
+            {isAdmin ? '5-Working-Day Organization Weekly Attendance' : 'My Weekly Attendance (Mon – Fri)'}
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {isAdmin ? 'System-wide weekly office attendance analytics' : 'Personal 7-day weekly attendance performance record'}
+            {isAdmin 
+              ? 'Complete 5-day attendance matrix across all active organization members' 
+              : 'Personal 5-working-day check-in status and attendance history'}
           </p>
         </div>
 
@@ -80,108 +89,85 @@ export const WeeklyAttendanceSection: React.FC<WeeklyAttendanceSectionProps> = (
         </div>
       </div>
 
-      {/* Weekly Metric Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Weekly Attendance Rate
-          </div>
-          <div className="text-xl font-extrabold text-blue-600 dark:text-blue-400">
-            {currentWeek.attendanceRate}%
-          </div>
-        </div>
-
-        <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Total Check-ins Saved
-          </div>
-          <div className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
-            {currentWeek.totalCheckIns}
-          </div>
-        </div>
-
-        <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            On-Time Check-ins
-          </div>
-          <div className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
-            {currentWeek.presentCount}
-          </div>
-        </div>
-
-        <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
-          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-            Late Check-ins
-          </div>
-          <div className="text-xl font-extrabold text-amber-600 dark:text-amber-400">
-            {currentWeek.lateCount}
-          </div>
-        </div>
-      </div>
-
-      {/* 7-Day Day-by-Day Breakdown Cards */}
+      {/* 5-Working-Day Overview Bar */}
       <div>
-        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-          <BarChart2 className="w-3.5 h-3.5 text-blue-500" />
-          7-Day Weekly Attendance Calendar
-        </h4>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+            <BarChart2 className="w-3.5 h-3.5 text-blue-500" />
+            THIS WEEK (MON – FRI)
+          </h4>
+          <span className="text-[11px] font-semibold text-slate-500 font-mono">
+            {fiveDays[0]?.monthDayLabel} – {fiveDays[4]?.monthDayLabel}
+          </span>
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
-          {currentWeek.dailyBreakdown.map((dayData) => {
-            // Find user's record for this day if member mode
-            const userDayRec = userRecords.find(r => r.date === dayData.date);
-            const isToday = dayData.date === new Date().toISOString().slice(0, 10);
+        <div className="grid grid-cols-5 gap-2">
+          {fiveDays.map((wd) => {
+            const dayBreakdown = currentWeek.dailyBreakdown.find(d => d.date === wd.date);
+            const userDayRec = userRecords.find(r => r.date === wd.date);
+            const isToday = wd.isToday;
 
             return (
               <div
-                key={dayData.day}
+                key={wd.day}
                 className={`p-3 rounded-xl border transition-all text-center flex flex-col justify-between ${
                   isToday
-                    ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-500/80 ring-1 ring-blue-500/50'
-                    : 'bg-slate-50/50 dark:bg-slate-800/30 border-slate-200/70 dark:border-slate-800'
+                    ? 'bg-blue-50/90 dark:bg-blue-950/60 border-blue-500 ring-2 ring-blue-500/40 shadow-md'
+                    : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800'
                 }`}
               >
                 <div>
-                  <div className="flex items-center justify-between text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase">
-                    <span>{dayData.day}</span>
-                    {isToday && <span className="text-blue-500 font-bold text-[9px]">TODAY</span>}
+                  <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-600 dark:text-slate-300">
+                    <span>{wd.day}</span>
+                    {isToday && <span className="text-blue-600 dark:text-blue-400 font-extrabold text-[9px] bg-blue-100 dark:bg-blue-900/60 px-1.5 py-0.5 rounded">TODAY</span>}
                   </div>
-                  <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 font-mono mt-0.5">
-                    {new Date(dayData.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
+                  <div className="text-xs font-bold text-slate-900 dark:text-slate-100 font-mono mt-0.5">
+                    {wd.monthDayLabel}
                   </div>
                 </div>
 
-                <div className="my-2 py-1.5">
+                <div className="my-2.5">
                   {!isAdmin ? (
                     userDayRec ? (
                       <div className="space-y-1">
-                        <StatusBadge status={userDayRec.status === 'ACTIVE' ? 'PRESENT' : userDayRec.status} size="sm" />
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                          userDayRec.status === 'LATE'
+                            ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800'
+                            : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800'
+                        }`}>
+                          <Check className="w-3 h-3" />
+                          {userDayRec.status === 'ACTIVE' ? 'PRESENT' : userDayRec.status}
+                        </span>
                         <p className="text-[10px] text-slate-400 font-mono">{userDayRec.check_in_time}</p>
                       </div>
                     ) : (
-                      <span className="text-[10px] font-semibold text-slate-400 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
-                        {isToday ? 'NOT MARKED' : 'UNMARKED'}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                        wd.isPast
+                          ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-800'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                      }`}>
+                        {wd.isPast ? 'ABSENT' : (isToday ? 'NOT MARKED' : 'PENDING')}
                       </span>
                     )
                   ) : (
                     <div className="space-y-0.5">
-                      <div className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
-                        {dayData.present + dayData.late} / {totalMembersCount || 1}
+                      <div className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
+                        {(dayBreakdown?.present || 0) + (dayBreakdown?.late || 0)} / {totalMembersCount || 1}
                       </div>
-                      <div className="text-[10px] text-slate-400">
-                        {dayData.late > 0 ? `${dayData.late} late` : 'all on-time'}
+                      <div className="text-[10px] text-slate-400 font-medium">
+                        {dayBreakdown?.late && dayBreakdown.late > 0 ? `${dayBreakdown.late} late` : 'on-time'}
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Progress bar */}
+                {/* Status Bar */}
                 <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
                   <div
                     className="bg-emerald-500 h-full rounded-full transition-all duration-300"
                     style={{
                       width: isAdmin
-                        ? `${Math.min(100, Math.round(((dayData.present + dayData.late) / (totalMembersCount || 1)) * 100))}%`
+                        ? `${Math.min(100, Math.round((((dayBreakdown?.present || 0) + (dayBreakdown?.late || 0)) / (totalMembersCount || 1)) * 100))}%`
                         : userDayRec ? '100%' : '0%'
                     }}
                   />
@@ -192,6 +178,90 @@ export const WeeklyAttendanceSection: React.FC<WeeklyAttendanceSectionProps> = (
         </div>
       </div>
 
+      {/* Organization-Wide 5-Day Weekly Attendance Matrix for Admin */}
+      {isAdmin && allMembers.length > 0 && (
+        <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-purple-500" />
+              WEEKLY ATTENDANCE MATRIX (MON – FRI)
+            </h4>
+            <div className="flex items-center gap-3 text-[10px] font-bold">
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" /> P = Present
+              </span>
+              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                <span className="w-2 h-2 rounded-full bg-amber-500" /> L = Late
+              </span>
+              <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
+                <span className="w-2 h-2 rounded-full bg-rose-500" /> A = Absent
+              </span>
+              <span className="flex items-center gap-1 text-slate-400">
+                <span className="w-2 h-2 rounded-full bg-slate-400" /> - = Not Marked
+              </span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider">
+                  <th className="py-2.5 px-3">Organization Member</th>
+                  {fiveDays.map(wd => (
+                    <th key={wd.day} className="py-2.5 px-3 text-center font-mono">
+                      {wd.day} ({wd.monthDayLabel})
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {allMembers.slice(0, 15).map(m => (
+                  <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <td className="py-2.5 px-3">
+                      <div className="font-bold text-slate-900 dark:text-slate-100">{m.full_name}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">{m.member_id} • {m.rank}</div>
+                    </td>
+                    {fiveDays.map(wd => {
+                      const rec = attendanceRecords.find(r => 
+                        (r.member_id === m.id || r.member_name === m.full_name) && r.date === wd.date
+                      );
+                      
+                      let code = '-';
+                      let color = 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500';
+
+                      if (rec) {
+                        if (rec.status === 'LATE') {
+                          code = 'L';
+                          color = 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800';
+                        } else if (rec.status === 'ABSENT') {
+                          code = 'A';
+                          color = 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800';
+                        } else {
+                          code = 'P';
+                          color = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800';
+                        }
+                      } else if (wd.isPast) {
+                        code = 'A';
+                        color = 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800';
+                      }
+
+                      return (
+                        <td key={wd.day} className="py-2.5 px-3 text-center">
+                          <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-mono font-extrabold ${color}`}>
+                            {code}
+                          </span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
+
