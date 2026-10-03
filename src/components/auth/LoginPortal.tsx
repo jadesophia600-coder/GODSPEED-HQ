@@ -358,36 +358,6 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
             </button>
 
           </form>
-
-          {/* Quick Demo Launch Divider */}
-          <div className="relative my-6 text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-800" />
-            </div>
-            <span className="relative px-3 bg-[#0B132B] text-[10px] uppercase font-bold text-slate-400">
-              Or Instant Launch Status View
-            </span>
-          </div>
-
-          {/* Quick Demo Launch Buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => onDemoAccess('super_admin')}
-              className="p-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/30 flex flex-col items-center justify-center transition-colors group"
-            >
-              <Sparkles className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-[11px] font-bold">Admin Portal</span>
-            </button>
-
-            <button
-              onClick={() => onDemoAccess('member')}
-              className="p-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 flex flex-col items-center justify-center transition-colors group"
-            >
-              <UserCheck className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-[11px] font-bold">Member Portal</span>
-            </button>
-          </div>
-
         </div>
 
         {/* Security Footer */}

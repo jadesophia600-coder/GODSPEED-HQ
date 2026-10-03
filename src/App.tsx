@@ -199,12 +199,17 @@ export function App() {
   };
 
   const handleRoleChange = (newRole: UserRole) => {
+    const registeredRole = currentUser?.role || localStorage.getItem('godspeed_user_role');
+    if (newRole === 'super_admin' && registeredRole !== 'super_admin') {
+      triggerToast('Access Denied: Only accounts registered as Admin can access the Admin Panel.');
+      return;
+    }
     setUserRole(newRole);
     localStorage.setItem('godspeed_user_role', newRole);
     if (currentUser) {
       setCurrentUser({ ...currentUser, role: newRole });
     }
-    triggerToast(`View context updated to ${newRole.replace('_', ' ').toUpperCase()}`);
+    triggerToast(`View context updated to ${newRole === 'super_admin' ? 'ADMIN' : 'MEMBER'}`);
   };
 
   const handleLoginSuccess = (user: any, role: UserRole) => {
@@ -569,34 +574,41 @@ export function App() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard
                       label="Today's Attendance Rate"
-                      value={attendanceRecords.length > 0 ? "94.2%" : "100%"}
+                      value={members.length > 0 ? `${Math.min(100, Math.round((attendanceRecords.length / members.length) * 100))}%` : "100%"}
                       icon={<CalendarCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
                       trend={{ value: '+2.4%', isPositive: true, period: 'today' }}
-                      subtitle="Verified office check-ins"
+                      subtitle={`${attendanceRecords.length} check-ins recorded`}
                     />
                     <StatCard
                       label="Total Office Members"
-                      value={members.length > 0 ? members.length.toLocaleString() : '1,248'}
+                      value={members.length.toLocaleString()}
                       icon={<Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
-                      subtitle="Active network"
+                      subtitle="Registered active network"
                     />
                     <StatCard
                       label="Connected Hubs"
-                      value={offices.length > 0 ? offices.length.toString() : '4'}
+                      value={offices.length.toString()}
                       icon={<Building2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
-                      subtitle="International offices"
+                      subtitle="Active office hubs"
                     />
                     <StatCard
                       label="Total Volume"
-                      value={`${(pvSubmissions.reduce((acc, curr) => acc + (curr.pv_amount || 0), 0) || 342000).toLocaleString()} PV`}
+                      value={`${pvSubmissions.reduce((acc, curr) => acc + (curr.pv_amount || 0), 0).toLocaleString()} PV`}
                       icon={<Award className="w-5 h-5 text-amber-500" />}
                       isGold={true}
-                      subtitle="Accumulated PV points"
+                      subtitle="Accumulated verified volume"
                     />
                   </div>
                 )}
 
-                <DataVisualizationSection userRole={userRole} darkMode={darkMode} />
+                <DataVisualizationSection 
+                  userRole={userRole} 
+                  darkMode={darkMode} 
+                  members={members}
+                  offices={offices}
+                  pvSubmissions={pvSubmissions}
+                  attendanceRecords={attendanceRecords}
+                />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2">
