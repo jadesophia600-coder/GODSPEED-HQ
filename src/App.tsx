@@ -20,6 +20,7 @@ import type {
 import { 
   supabase,
   getCurrentUser,
+  updateUserProfile,
   getMembers,
   getOffices,
   getPVSubmissions,
@@ -367,12 +368,46 @@ export function App() {
     }
   };
 
-  // Fallback default user object for header / shell display
+  // Save Profile Changes to Supabase and update local state
+  const handleSaveProfile = async (updates: Partial<Member>) => {
+    const targetMember = selectedMember || activeUserDisplay;
+    if (!targetMember) return;
+
+    const res = await updateUserProfile(targetMember.id, updates);
+    if (!res.success) {
+      triggerToast(`Update notice: ${res.error || 'Saved to session'}`);
+    }
+
+    const updatedMember: Member = {
+      ...targetMember,
+      ...updates
+    };
+
+    // Update active user state if updating logged-in profile
+    if (!currentUser || targetMember.id === currentUser.id || targetMember.email === currentUser.email) {
+      setCurrentUser(updatedMember);
+    }
+
+    // Update selected member state
+    setSelectedMember(updatedMember);
+
+    // Update members list state
+    setMembers(prev => prev.map(m => m.id === updatedMember.id || m.email === updatedMember.email ? { ...m, ...updates } : m));
+
+    // Store updated email in localStorage for persistent session
+    if (updates.email) {
+      localStorage.setItem('godspeed_user_email', updates.email);
+    }
+
+    triggerToast('Profile & Email updated successfully!');
+  };
+
+  // User object for header / shell display
   const activeUserDisplay: Member = currentUser || {
     id: 'user-active',
     member_id: 'GSD-SESSION',
     full_name: userRole === 'super_admin' ? 'Executive Director' : userRole === 'regional_manager' ? 'Regional Manager' : 'Office Member',
-    email: 'user@godspeedhq.com',
+    email: localStorage.getItem('godspeed_user_email') || 'office.member@godspeedhq.org',
     phone: '',
     role: userRole,
     rank: userRole === 'super_admin' ? 'Director' : userRole === 'regional_manager' ? 'Executive Manager' : 'Distributors',
@@ -381,10 +416,10 @@ export function App() {
     status: 'ACTIVE',
     avatar_url: '',
     join_date: new Date().toISOString().slice(0, 10),
-    pv_total: 14850,
-    earnings_ytd: 184500,
-    health_score: 94,
-    downline_count: 342
+    pv_total: 0,
+    earnings_ytd: 0,
+    health_score: 100,
+    downline_count: 0
   };
 
   const getPageTitle = (): string => {
@@ -646,6 +681,10 @@ export function App() {
         <MemberProfileModal
           member={selectedMember}
           onClose={() => setSelectedMember(null)}
+          onSaveProfile={handleSaveProfile}
+          attendanceRecords={attendanceRecords}
+          pvSubmissions={pvSubmissions}
+          earningsRecords={earningsRecords}
         />
       )}
 

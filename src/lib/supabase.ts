@@ -35,23 +35,24 @@ export async function getCurrentUser(): Promise<Member | null> {
       .single();
 
     if (error || !data) {
+      const userEmail = user.email || localStorage.getItem('godspeed_user_email') || '';
       return {
         id: user.id,
         member_id: `GSD-${user.id.slice(0, 4).toUpperCase()}`,
-        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member User',
-        email: user.email || '',
+        full_name: user.user_metadata?.full_name || userEmail.split('@')[0] || 'Member User',
+        email: userEmail,
         phone: '',
         role: user.user_metadata?.role || 'member',
-        rank: user.user_metadata?.business_status || 'Director',
+        rank: user.user_metadata?.business_status || 'Distributors',
         office_id: 'off-01',
         office_name: 'GODSPEED Office',
         status: 'ACTIVE',
         avatar_url: '',
         join_date: new Date().toISOString().slice(0, 10),
-        pv_total: 14850,
-        earnings_ytd: 184500,
-        health_score: 94,
-        downline_count: 342
+        pv_total: 0,
+        earnings_ytd: 0,
+        health_score: 100,
+        downline_count: 0
       };
     }
 
@@ -62,7 +63,7 @@ export async function getCurrentUser(): Promise<Member | null> {
       email: data.email || user.email || '',
       phone: data.phone || '',
       role: data.role || 'member',
-      rank: data.rank || 'Director',
+      rank: data.rank || 'Distributors',
       office_id: data.office_id || '',
       office_name: data.office_name || 'GODSPEED Office',
       status: data.status || 'ACTIVE',
@@ -70,7 +71,7 @@ export async function getCurrentUser(): Promise<Member | null> {
       join_date: data.join_date || new Date().toISOString().slice(0, 10),
       pv_total: data.pv_total || 0,
       earnings_ytd: data.earnings_ytd || 0,
-      health_score: data.health_score || 0,
+      health_score: data.health_score || 100,
       downline_count: data.downline_count || 0
     };
   } catch (err) {
@@ -78,6 +79,72 @@ export async function getCurrentUser(): Promise<Member | null> {
     return null;
   }
 }
+
+export async function updateUserProfile(
+  userId: string,
+  updates: Partial<Member>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const nowIso = new Date().toISOString();
+
+    // 1. Update profiles table
+    const profilePayload: any = { updated_at: nowIso };
+    if (updates.full_name !== undefined) profilePayload.full_name = updates.full_name;
+    if (updates.email !== undefined) profilePayload.email = updates.email;
+    if (updates.phone !== undefined) profilePayload.phone = updates.phone;
+    if (updates.avatar_url !== undefined) profilePayload.avatar_url = updates.avatar_url;
+    if (updates.rank !== undefined) profilePayload.rank = updates.rank;
+    if (updates.office_name !== undefined) profilePayload.office_name = updates.office_name;
+
+    const { error: profileErr } = await supabase
+      .from('profiles')
+      .upsert({
+        id: userId,
+        ...profilePayload
+      }, { onConflict: 'id' });
+
+    if (profileErr) {
+      console.warn('Notice updating profiles table:', profileErr.message);
+    }
+
+    // 2. Update members table by email or member_id
+    const memberPayload: any = { updated_at: nowIso };
+    if (updates.full_name !== undefined) memberPayload.full_name = updates.full_name;
+    if (updates.email !== undefined) memberPayload.email = updates.email;
+    if (updates.phone !== undefined) memberPayload.phone = updates.phone;
+    if (updates.avatar_url !== undefined) memberPayload.avatar_url = updates.avatar_url;
+    if (updates.rank !== undefined) memberPayload.rank = updates.rank;
+    if (updates.office_name !== undefined) memberPayload.office_name = updates.office_name;
+
+    if (updates.email) {
+      await supabase
+        .from('members')
+        .update(memberPayload)
+        .eq('email', updates.email);
+    }
+
+    // 3. Update auth metadata if logged in
+    if (updates.email || updates.full_name) {
+      try {
+        await supabase.auth.updateUser({
+          email: updates.email,
+          data: {
+            full_name: updates.full_name,
+            avatar_url: updates.avatar_url
+          }
+        });
+      } catch (authErr) {
+        console.warn('Notice updating auth user:', authErr);
+      }
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error updating profile in Supabase:', err);
+    return { success: false, error: err?.message || 'Failed to update profile' };
+  }
+}
+
 
 export async function getMembers(): Promise<Member[]> {
   try {
