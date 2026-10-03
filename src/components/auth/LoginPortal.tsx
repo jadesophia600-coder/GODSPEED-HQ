@@ -102,17 +102,20 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
         rank: statusVal,
         member_id: memberCode,
         office_name: 'GODSPEED Office',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        join_date: new Date().toISOString()
       }], { onConflict: 'id' });
 
       await supabase.from('members').upsert([{
+        user_id: userId,
         member_id: memberCode,
         full_name: name,
         email: userEmail,
         role: roleVal,
         rank: statusVal,
         office_name: 'GODSPEED Office',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        join_date: new Date().toISOString()
       }], { onConflict: 'email' });
     } catch (err) {
       console.error('Error saving member to Supabase:', err);
