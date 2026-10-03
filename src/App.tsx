@@ -140,7 +140,21 @@ export function App() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Real-time Supabase Database Listener for Instant Member Directory Updates
+    const realtimeDbChannel = supabase
+      .channel('godspeed_realtime_members')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
+        loadSupabaseData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        loadSupabaseData();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(realtimeDbChannel);
+    };
   }, []);
 
   // Load live data from Supabase
@@ -618,6 +632,7 @@ export function App() {
                       onSelectMember={setSelectedMember}
                       onAddMember={() => setShowAddMember(true)}
                       userRole={userRole}
+                      onRefreshData={loadSupabaseData}
                     />
                   </div>
                   <div>
@@ -636,6 +651,7 @@ export function App() {
               onSelectMember={setSelectedMember}
               onAddMember={() => setShowAddMember(true)}
               userRole={userRole}
+              onRefreshData={loadSupabaseData}
             />
           )}
 

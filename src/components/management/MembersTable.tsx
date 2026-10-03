@@ -7,7 +7,11 @@ import {
   ChevronRight, 
   Award,
   MoreVertical,
-  Building
+  Building,
+  RefreshCw,
+  ShieldCheck,
+  UserCheck,
+  Database
 } from 'lucide-react';
 import type { Member, UserRole } from '../../types';
 import { StatusBadge } from '../ui/StatusBadge';
@@ -17,19 +21,32 @@ interface MembersTableProps {
   onSelectMember: (member: Member) => void;
   onAddMember: () => void;
   userRole: UserRole;
+  onRefreshData?: () => Promise<void>;
 }
 
 export const MembersTable: React.FC<MembersTableProps> = ({
   members,
   onSelectMember,
   onAddMember,
-  userRole
+  userRole,
+  onRefreshData
 }) => {
   const [search, setSearch] = useState('');
   const [selectedRank, setSelectedRank] = useState<string>('ALL');
   const [selectedOffice, setSelectedOffice] = useState<string>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const [isSyncing, setIsSyncing] = useState(false);
+  const pageSize = 6;
+
+  const handleSyncDatabase = async () => {
+    if (!onRefreshData || isSyncing) return;
+    setIsSyncing(true);
+    try {
+      await onRefreshData();
+    } finally {
+      setTimeout(() => setIsSyncing(false), 500);
+    }
+  };
 
   const filteredMembers = members.filter((m) => {
     const matchesSearch = 
@@ -47,9 +64,9 @@ export const MembersTable: React.FC<MembersTableProps> = ({
   const paginatedMembers = filteredMembers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleExportCSV = () => {
-    const headers = "ID,Name,Email,Rank,Office,Status,PV,Earnings,HealthScore\n";
+    const headers = "ID,Name,Email,Role,Rank,Office,Status,JoinDate,PV,Earnings,HealthScore\n";
     const rows = filteredMembers.map(m => 
-      `"${m.member_id}","${m.full_name}","${m.email}","${m.rank}","${m.office_name}","${m.status}",${m.pv_total},${m.earnings_ytd},${m.health_score}`
+      `"${m.member_id}","${m.full_name}","${m.email}","${m.role}","${m.rank}","${m.office_name}","${m.status}","${m.join_date || ''}",${m.pv_total},${m.earnings_ytd},${m.health_score}`
     ).join("\n");
 
     const blob = new Blob([headers + rows], { type: 'text/csv' });
@@ -68,16 +85,28 @@ export const MembersTable: React.FC<MembersTableProps> = ({
         <div>
           <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             Member Management Directory
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/40">
-              {filteredMembers.length} Members
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/40 flex items-center gap-1">
+              <Database className="w-3 h-3 text-emerald-500" />
+              {filteredMembers.length} Members Live DB
             </span>
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            View profiles, assign offices, inspect volume performance and rank achievements
+            Real-time Supabase directory of all registered organization admins and team members.
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {onRefreshData && (
+            <button
+              onClick={handleSyncDatabase}
+              disabled={isSyncing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors border border-slate-200/60 dark:border-slate-700 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-blue-500' : 'text-slate-400'}`} />
+              {isSyncing ? 'Syncing DB...' : 'Sync Supabase DB'}
+            </button>
+          )}
+
           <button
             onClick={handleExportCSV}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors border border-slate-200/60 dark:border-slate-700"
@@ -147,11 +176,12 @@ export const MembersTable: React.FC<MembersTableProps> = ({
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-slate-100/80 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
-              <th className="py-3 px-4">Member Info</th>
+              <th className="py-3 px-4">Member Details</th>
+              <th className="py-3 px-4">Privilege Role</th>
               <th className="py-3 px-4">Status & Hub</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4">Total PV</th>
-              <th className="py-3 px-4">Earnings (YTD)</th>
+              <th className="py-3 px-4">Account Status</th>
+              <th className="py-3 px-4">Joined Date</th>
+              <th className="py-3 px-4">Volume (PV)</th>
               <th className="py-3 px-4">Vitality Score</th>
               <th className="py-3 px-4 text-right">Action</th>
             </tr>
@@ -189,6 +219,20 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                   </td>
 
                   <td className="py-3 px-4">
+                    {m.role === 'super_admin' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/30">
+                        <ShieldCheck className="w-3 h-3 text-amber-500" />
+                        Admin
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                        <UserCheck className="w-3 h-3 text-blue-400" />
+                        Member
+                      </span>
+                    )}
+                  </td>
+
+                  <td className="py-3 px-4">
                     <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
                       <Award className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                       <span>{m.rank}</span>
@@ -203,17 +247,17 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                     <StatusBadge status={m.status} size="sm" />
                   </td>
 
+                  <td className="py-3 px-4 text-[11px] font-mono text-slate-500">
+                    {m.join_date || '2026-10-03'}
+                  </td>
+
                   <td className="py-3 px-4 font-mono font-semibold text-slate-800 dark:text-slate-200">
                     {m.pv_total.toLocaleString()} PV
                   </td>
 
-                  <td className="py-3 px-4 font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                    ${m.earnings_ytd.toLocaleString()}
-                  </td>
-
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                      <div className="w-14 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
                             m.health_score > 90 ? 'bg-emerald-500' : m.health_score > 80 ? 'bg-blue-500' : 'bg-amber-500'
@@ -243,7 +287,7 @@ export const MembersTable: React.FC<MembersTableProps> = ({
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                <td colSpan={8} className="py-8 text-center text-slate-500 dark:text-slate-400">
                   No member records matched your search criteria.
                 </td>
               </tr>
