@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { 
+  UserRole,
   Member, 
   Office, 
   PVSubmission, 
@@ -328,6 +329,36 @@ export async function getMembers(): Promise<Member[]> {
           sponsor_id: m.sponsor_id || existing?.sponsor_id
         });
       });
+    }
+
+    // Add current active session user if stored in localStorage
+    const storedUserEmail = localStorage.getItem('godspeed_user_email');
+    if (storedUserEmail) {
+      const userKey = storedUserEmail.toLowerCase();
+      if (!memberMap.has(userKey)) {
+        const storedName = localStorage.getItem('godspeed_user_name') || storedUserEmail.split('@')[0];
+        const storedRank = localStorage.getItem('godspeed_user_rank') || 'Distributors';
+        const storedRole = (localStorage.getItem('godspeed_user_role') as UserRole) || 'member';
+        const storedAvatar = localStorage.getItem('godspeed_user_avatar') || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(storedName)}`;
+        memberMap.set(userKey, {
+          id: `usr-${userKey.replace(/[^a-z0-9]/g, '').slice(0, 12)}`,
+          member_id: cleanMemberId('', storedUserEmail),
+          full_name: storedName,
+          email: storedUserEmail,
+          phone: '',
+          role: storedRole,
+          rank: storedRank,
+          office_id: 'off-01',
+          office_name: 'GODSPEED Office',
+          status: 'ACTIVE',
+          avatar_url: storedAvatar,
+          join_date: new Date().toISOString().slice(0, 10),
+          pv_total: 0,
+          earnings_ytd: 0,
+          health_score: 100,
+          downline_count: 0
+        });
+      }
     }
 
     return Array.from(memberMap.values());

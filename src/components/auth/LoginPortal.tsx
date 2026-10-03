@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import type { UserRole, BusinessStatus } from '../../types';
+import type { UserRole, BusinessStatus, Member } from '../../types';
 import { 
   Zap, 
   Lock, 
@@ -62,6 +62,36 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
       localStorage.setItem('godspeed_user_name', name);
       localStorage.setItem('godspeed_user_rank', statusVal);
       localStorage.setItem('godspeed_user_role', roleVal);
+
+      // Save to registered members local storage list for instant admin panel synchronization
+      const regKey = 'godspeed_registered_members';
+      const regStr = localStorage.getItem(regKey) || '[]';
+      let regList: Member[] = [];
+      try { regList = JSON.parse(regStr); } catch (e) {}
+      
+      const existsInReg = regList.find(m => m.email.toLowerCase() === userEmail.toLowerCase());
+      if (!existsInReg) {
+        const newMemberObj: Member = {
+          id: userId,
+          member_id: memberCode,
+          full_name: name,
+          email: userEmail,
+          phone: '',
+          role: roleVal,
+          rank: statusVal,
+          office_id: 'off-01',
+          office_name: 'GODSPEED Office',
+          status: 'ACTIVE',
+          avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
+          join_date: new Date().toISOString().slice(0, 10),
+          pv_total: 0,
+          earnings_ytd: 0,
+          health_score: 100,
+          downline_count: 0
+        };
+        regList.push(newMemberObj);
+        localStorage.setItem(regKey, JSON.stringify(regList));
+      }
 
       await supabase.from('profiles').upsert([{
         id: userId,
