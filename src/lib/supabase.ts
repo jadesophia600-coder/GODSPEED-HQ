@@ -497,17 +497,184 @@ export async function getDuesRecords(): Promise<DuesRecord[]> {
 
 export async function getAttendanceRecords(): Promise<AttendanceRecord[]> {
   try {
-    const { data, error } = await supabase
+    const { data: dbData } = await supabase
       .from('attendance')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('date', { ascending: false });
 
-    if (error || !data) return [];
-    return data as AttendanceRecord[];
+    const localStr = localStorage.getItem('godspeed_attendance_records') || '[]';
+    let localRecords: AttendanceRecord[] = [];
+    try { localRecords = JSON.parse(localStr); } catch (e) {}
+
+    const recordMap = new Map<string, AttendanceRecord>();
+
+    // Add local records first
+    localRecords.forEach(r => {
+      const key = `${r.member_id || r.member_name}_${r.date}`;
+      recordMap.set(key, r);
+    });
+
+    // Merge database records (database takes precedence)
+    if (dbData) {
+      dbData.forEach((r: any) => {
+        const key = `${r.member_id || r.member_name}_${r.date}`;
+        recordMap.set(key, r as AttendanceRecord);
+      });
+    }
+
+    return Array.from(recordMap.values()).sort((a, b) => (b.date > a.date ? 1 : -1));
   } catch (err) {
     console.error('Error fetching attendance from Supabase:', err);
-    return [];
+    const localStr = localStorage.getItem('godspeed_attendance_records') || '[]';
+    try { return JSON.parse(localStr); } catch (e) { return []; }
   }
+}
+
+export async function saveAttendanceRecord(record: Partial<AttendanceRecord>): Promise<{ success: boolean; record: AttendanceRecord }> {
+  try {
+    const recId = record.id || `att-${Date.now()}`;
+    const todayDate = record.date || new Date().toISOString().slice(0, 10);
+    const nowTime = record.check_in_time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const fullRecord: AttendanceRecord = {
+      id: recId,
+      member_id: record.member_id || 'user-active',
+      member_name: record.member_name || 'Member User',
+      office_id: record.office_id || 'off-01',
+      office_name: record.office_name || 'GODSPEED Office',
+      date: todayDate,
+      check_in_time: nowTime,
+      event_type: record.event_type || 'Daily QR Attendance',
+      status: record.status || 'PRESENT',
+      session_token: record.session_token || ''
+    };
+
+    // 1. Save to local storage for instant offline availability
+    const localStr = localStorage.getItem('godspeed_attendance_records') || '[]';
+    let localRecords: AttendanceRecord[] = [];
+    try { localRecords = JSON.parse(localStr); } catch (e) {}
+    
+    const existingIndex = localRecords.findIndex(r => (r.member_id === fullRecord.member_id || r.member_name === fullRecord.member_name) && r.date === todayDate);
+    if (existingIndex >= 0) {
+      localRecords[existingIndex] = fullRecord;
+    } else {
+      localRecords.unshift(fullRecord);
+    }
+    localStorage.setItem('godspeed_attendance_records', JSON.stringify(localRecords));
+
+    // 2. Insert/upsert into Supabase attendance table
+    const { data: dbData, error: dbErr } = await supabase
+      .from('attendance')
+      .upsert([fullRecord], { onConflict: 'id' })
+      .select()
+      .single();
+
+    if (dbErr) {
+      console.warn('Notice saving attendance to Supabase table:', dbErr.message);
+    }
+
+    return {
+      success: true,
+      record: (dbData as AttendanceRecord) || fullRecord
+    };
+  } catch (err) {
+    console.error('Error saving attendance record to Supabase:', err);
+    const fallbackRec = record as AttendanceRecord;
+    return { success: false, record: fallbackRec };
+  }
+}
+
+export interface WeeklyAttendanceSummary {
+  weekLabel: string;
+  startDate: string;
+  endDate: string;
+  totalCheckIns: number;
+  presentCount: number;
+  lateCount: number;
+  attendanceRate: number;
+  dailyBreakdown: { day: string; date: string; present: number; late: number; unmarked: number }[];
+}
+
+export function getWeeklyAttendanceData(attendanceRecords: AttendanceRecord[], totalMembersCount: number): WeeklyAttendanceSummary[] {
+  const weeksMap = new Map<string, AttendanceRecord[]>();
+
+  attendanceRecords.forEach(rec => {
+    if (!rec.date) return;
+    const d = new Date(rec.date);
+    const dayNum = d.getDay() === 0 ? 7 : d.getDay(); // 1 (Mon) to 7 (Sun)
+    const mon = new Date(d);
+    mon.setDate(d.getDate() - (dayNum - 1));
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+
+    const monStr = mon.toISOString().slice(0, 10);
+    const sunStr = sun.toISOString().slice(0, 10);
+    const weekKey = `${monStr} to ${sunStr}`;
+
+    if (!weeksMap.has(weekKey)) {
+      weeksMap.set(weekKey, []);
+    }
+    weeksMap.get(weekKey)!.push(rec);
+  });
+
+  if (weeksMap.size === 0) {
+    const d = new Date();
+    const dayNum = d.getDay() === 0 ? 7 : d.getDay();
+    const mon = new Date(d);
+    mon.setDate(d.getDate() - (dayNum - 1));
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    const weekKey = `${mon.toISOString().slice(0, 10)} to ${sun.toISOString().slice(0, 10)}`;
+    weeksMap.set(weekKey, []);
+  }
+
+  const summaries: WeeklyAttendanceSummary[] = [];
+  const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  weeksMap.forEach((recs, weekKey) => {
+    const [startStr, endStr] = weekKey.split(' to ');
+    const startMon = new Date(startStr);
+
+    const dailyBreakdown = daysOfWeek.map((dayName, idx) => {
+      const curDate = new Date(startMon);
+      curDate.setDate(startMon.getDate() + idx);
+      const curDateStr = curDate.toISOString().slice(0, 10);
+
+      const dayRecs = recs.filter(r => r.date === curDateStr);
+      const present = dayRecs.filter(r => r.status === 'PRESENT' || r.status === 'ACTIVE').length;
+      const late = dayRecs.filter(r => r.status === 'LATE').length;
+      const unmarked = Math.max(0, (totalMembersCount || 1) - (present + late));
+
+      return {
+        day: dayName,
+        date: curDateStr,
+        present,
+        late,
+        unmarked
+      };
+    });
+
+    const presentCount = recs.filter(r => r.status === 'PRESENT' || r.status === 'ACTIVE').length;
+    const lateCount = recs.filter(r => r.status === 'LATE').length;
+    const totalCheckIns = recs.length;
+    const rate = totalMembersCount > 0 ? Math.min(100, Math.round(((presentCount + lateCount) / (totalMembersCount * 5)) * 100)) : 100;
+
+    const startFormatted = new Date(startStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const endFormatted = new Date(endStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    summaries.push({
+      weekLabel: `Week (${startFormatted} – ${endFormatted})`,
+      startDate: startStr,
+      endDate: endStr,
+      totalCheckIns,
+      presentCount,
+      lateCount,
+      attendanceRate: rate,
+      dailyBreakdown
+    });
+  });
+
+  return summaries.sort((a, b) => (b.startDate > a.startDate ? 1 : -1));
 }
 
 export async function getAttendanceSessions(): Promise<AttendanceSession[]> {

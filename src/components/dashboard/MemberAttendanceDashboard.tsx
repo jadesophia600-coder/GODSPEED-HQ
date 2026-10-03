@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Member, AttendanceRecord } from '../../types';
 import { StatusBadge } from '../ui/StatusBadge';
 import { QRScannerModal } from '../attendance/QRScannerModal';
+import { WeeklyAttendanceSection } from '../attendance/WeeklyAttendanceSection';
 import { 
   QrCode, 
   CalendarCheck, 
@@ -231,6 +232,14 @@ export const MemberAttendanceDashboard: React.FC<MemberAttendanceDashboardProps>
         </div>
 
       </div>
+
+      {/* WEEKLY ATTENDANCE TRACKER SECTION */}
+      <WeeklyAttendanceSection
+        attendanceRecords={attendanceRecords}
+        totalMembersCount={1}
+        currentUser={user}
+        isAdmin={false}
+      />
 
       {/* 3. RECENT ATTENDANCE HISTORY TABLE */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-card overflow-hidden">

@@ -31,7 +31,8 @@ import {
   getHealthMetrics,
   getActivities,
   addDownlineMember,
-  buildGenealogyTree
+  buildGenealogyTree,
+  saveAttendanceRecord
 } from './lib/supabase';
 
 import { LoginPortal } from './components/auth/LoginPortal';

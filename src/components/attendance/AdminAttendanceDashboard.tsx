@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Member, Office, AttendanceRecord, AttendanceSession } from '../../types';
 import { StatusBadge } from '../ui/StatusBadge';
 import { AdminQRGeneratorModal } from './AdminQRGeneratorModal';
-import { supabase } from '../../lib/supabase';
+import { WeeklyAttendanceSection } from './WeeklyAttendanceSection';
+import { supabase, getWeeklyAttendanceData } from '../../lib/supabase';
 import { 
   Users, 
   CalendarCheck, 
@@ -105,14 +106,22 @@ export const AdminAttendanceDashboard: React.FC<AdminAttendanceDashboardProps> =
     return matchesSearch && matchesOffice && matchesStatus;
   });
 
-  // Chart data for weekly comparison
-  const chartData = [
-    { day: 'Mon', Present: Math.round(totalMembersCount * 0.88), Late: Math.round(totalMembersCount * 0.08) },
-    { day: 'Tue', Present: Math.round(totalMembersCount * 0.92), Late: Math.round(totalMembersCount * 0.05) },
-    { day: 'Wed', Present: Math.round(totalMembersCount * 0.90), Late: Math.round(totalMembersCount * 0.06) },
-    { day: 'Thu', Present: Math.round(totalMembersCount * 0.94), Late: Math.round(totalMembersCount * 0.04) },
-    { day: 'Fri', Present: presentCount || Math.round(totalMembersCount * 0.85), Late: lateCount || Math.round(totalMembersCount * 0.07) },
-  ];
+  // Live weekly chart data derived from database attendance records
+  const weeklySummaries = getWeeklyAttendanceData(realtimeRecords, totalMembersCount);
+  const currentWeekData = weeklySummaries[0];
+  const chartData = currentWeekData
+    ? currentWeekData.dailyBreakdown.slice(0, 5).map(d => ({
+        day: d.day,
+        Present: d.present,
+        Late: d.late
+      }))
+    : [
+        { day: 'Mon', Present: 0, Late: 0 },
+        { day: 'Tue', Present: 0, Late: 0 },
+        { day: 'Wed', Present: 0, Late: 0 },
+        { day: 'Thu', Present: 0, Late: 0 },
+        { day: 'Fri', Present: 0, Late: 0 },
+      ];
 
   return (
     <div className="space-y-6">
@@ -242,6 +251,13 @@ export const AdminAttendanceDashboard: React.FC<AdminAttendanceDashboardProps> =
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* WEEKLY ATTENDANCE TRACKER SECTION */}
+      <WeeklyAttendanceSection
+        attendanceRecords={realtimeRecords}
+        totalMembersCount={totalMembersCount}
+        isAdmin={true}
+      />
 
       {/* Admin Attendance Table Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-card overflow-hidden">
