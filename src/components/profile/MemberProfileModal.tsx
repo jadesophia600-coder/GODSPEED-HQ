@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Member, AttendanceRecord, PVSubmission, EarningsRecord } from '../../types';
 import { StatusBadge } from '../ui/StatusBadge';
+import { cleanMemberId } from '../../lib/supabase';
 import { 
   X, 
   Award, 
@@ -55,6 +56,9 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Clean member ID to guarantee NO GSD-USR- formatting
+  const displayMemberId = cleanMemberId(member.member_id, member.email || member.id);
+
   // Filter records for this specific member
   const memberAttendance = attendanceRecords.filter(
     r => r.member_id === member.id || r.member_name === member.full_name
@@ -71,37 +75,8 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
   const realEarningsTotal = memberEarnings.reduce((sum, item) => sum + item.total_amount, member.earnings_ytd || 0);
   const attendanceCount = memberAttendance.length;
 
-  // Image Upload Handler
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg('Image size must be less than 5MB.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (result) {
-        setAvatarUrl(result);
-        setImagePreview(result);
-        setSuccessMsg('New profile photo selected. Click Save to update profile.');
-        setTimeout(() => setSuccessMsg(null), 4000);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Handle Save Profile & Email
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) {
-      setErrorMsg('Email address cannot be empty.');
-      return;
-    }
-
+  // Direct Save Trigger
+  const triggerSaveProfile = async (overrides?: Partial<Member>) => {
     setIsSaving(true);
     setErrorMsg(null);
 
@@ -112,14 +87,15 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
         phone: phone.trim(),
         rank: rank,
         office_name: officeName.trim(),
-        avatar_url: avatarUrl
+        avatar_url: avatarUrl,
+        ...overrides
       };
 
       if (onSaveProfile) {
         await onSaveProfile(updates);
       }
 
-      setSuccessMsg('Profile & Email updated successfully!');
+      setSuccessMsg('Profile & Email saved & updated successfully!');
       setIsEditing(false);
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
@@ -128,6 +104,39 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Image Upload Handler with Auto-Save
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg('Image size must be less than 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        setAvatarUrl(result);
+        setImagePreview(result);
+        setSuccessMsg('New profile photo uploaded! Saving profile...');
+        await triggerSaveProfile({ avatar_url: result });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle Form Submit
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      setErrorMsg('Email address cannot be empty.');
+      return;
+    }
+    await triggerSaveProfile();
   };
 
   const activeAvatar = imagePreview || avatarUrl || member.avatar_url;
@@ -216,7 +225,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-slate-300 font-mono mb-3">
-                <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">{member.member_id}</span>
+                <span className="px-2.5 py-0.5 rounded bg-slate-800 text-slate-200 font-bold border border-slate-700 font-mono">{displayMemberId}</span>
                 <span>•</span>
                 <span className="flex items-center gap-1 text-amber-400 font-semibold font-sans">
                   <Award className="w-3.5 h-3.5" />
@@ -246,8 +255,8 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                 </span>
               </div>
 
-              {/* Action Edit Toggle */}
-              <div className="mt-4 flex items-center justify-center sm:justify-start gap-2">
+              {/* Action Edit Toggle & Save Buttons */}
+              <div className="mt-4 flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <button
                   type="button"
                   onClick={() => setIsEditing(!isEditing)}
@@ -263,6 +272,15 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                 >
                   <Camera className="w-3.5 h-3.5" />
                   Upload Photo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => triggerSaveProfile()}
+                  disabled={isSaving}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition-all"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  {isSaving ? 'Saving...' : 'Save & Update Profile'}
                 </button>
               </div>
             </div>

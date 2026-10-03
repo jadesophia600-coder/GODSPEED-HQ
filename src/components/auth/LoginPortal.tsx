@@ -51,7 +51,18 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
 
   const saveMemberToSupabaseDB = async (userId: string, userEmail: string, name: string, roleVal: UserRole, statusVal: BusinessStatus) => {
     try {
-      const memberCode = `GSD-${Math.floor(1000 + Math.random() * 9000)}`;
+      let hash = 0;
+      for (let i = 0; i < userEmail.length; i++) {
+        hash = (hash << 5) - hash + userEmail.charCodeAt(i);
+        hash |= 0;
+      }
+      const memberCode = `GSD-${1000 + (Math.abs(hash) % 9000)}`;
+
+      // Save user session details in localStorage for auto-restore
+      localStorage.setItem('godspeed_user_email', userEmail);
+      localStorage.setItem('godspeed_user_name', name);
+      localStorage.setItem('godspeed_user_rank', statusVal);
+      localStorage.setItem('godspeed_user_role', roleVal);
 
       await supabase.from('profiles').upsert([{
         id: userId,
@@ -59,9 +70,10 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
         full_name: name,
         role: roleVal,
         rank: statusVal,
+        member_id: memberCode,
         office_name: 'GODSPEED Office',
         status: 'ACTIVE'
-      }]);
+      }], { onConflict: 'id' });
 
       await supabase.from('members').upsert([{
         member_id: memberCode,
@@ -71,7 +83,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
         rank: statusVal,
         office_name: 'GODSPEED Office',
         status: 'ACTIVE'
-      }]);
+      }], { onConflict: 'email' });
     } catch (err) {
       console.error('Error saving member to Supabase:', err);
     }
@@ -84,6 +96,12 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
 
     const systemRole = mapStatusToRole(businessStatus);
     const resolvedName = fullName || email.split('@')[0] || 'Member User';
+
+    // Store chosen rank & user credentials in local storage
+    localStorage.setItem('godspeed_user_email', email);
+    localStorage.setItem('godspeed_user_name', resolvedName);
+    localStorage.setItem('godspeed_user_rank', businessStatus);
+    localStorage.setItem('godspeed_user_role', systemRole);
 
     try {
       if (isSignUp) {
@@ -134,6 +152,13 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
         const fallbackUserId = `usr-${email.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12)}`;
         const userFullName = fullName || email.split('@')[0] || 'Member User';
 
+        let hash = 0;
+        for (let i = 0; i < email.length; i++) {
+          hash = (hash << 5) - hash + email.charCodeAt(i);
+          hash |= 0;
+        }
+        const memberCode = `GSD-${1000 + (Math.abs(hash) % 9000)}`;
+
         const fallbackUser = {
           id: fallbackUserId,
           email: email,
@@ -152,19 +177,20 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
             full_name: userFullName,
             role: systemRole,
             rank: businessStatus,
+            member_id: memberCode,
             office_name: 'GODSPEED Office',
             status: 'ACTIVE'
-          }]);
+          }], { onConflict: 'id' });
 
           await supabase.from('members').upsert([{
-            member_id: `GSD-${Math.floor(1000 + Math.random() * 9000)}`,
+            member_id: memberCode,
             full_name: userFullName,
             email: email,
             role: systemRole,
             rank: businessStatus,
             office_name: 'GODSPEED Office',
             status: 'ACTIVE'
-          }]);
+          }], { onConflict: 'email' });
         } catch (e) {
           // continue
         }

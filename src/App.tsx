@@ -21,6 +21,7 @@ import {
   supabase,
   getCurrentUser,
   updateUserProfile,
+  cleanMemberId,
   getMembers,
   getOffices,
   getPVSubmissions,
@@ -436,27 +437,28 @@ export function App() {
     // Update members list state
     setMembers(prev => prev.map(m => m.id === updatedMember.id || m.email === updatedMember.email ? { ...m, ...updates } : m));
 
-    // Store updated email in localStorage for persistent session
-    if (updates.email) {
-      localStorage.setItem('godspeed_user_email', updates.email);
-    }
+    // Store updated fields in localStorage for persistent session
+    if (updates.email) localStorage.setItem('godspeed_user_email', updates.email);
+    if (updates.full_name) localStorage.setItem('godspeed_user_name', updates.full_name);
+    if (updates.rank) localStorage.setItem('godspeed_user_rank', updates.rank);
+    if (updates.avatar_url) localStorage.setItem('godspeed_user_avatar', updates.avatar_url);
 
-    triggerToast('Profile & Email updated successfully!');
+    triggerToast('Profile & Email saved & updated successfully!');
   };
 
   // User object for header / shell display
   const activeUserDisplay: Member = currentUser || {
     id: 'user-active',
-    member_id: 'GSD-SESSION',
-    full_name: userRole === 'super_admin' ? 'Executive Director' : userRole === 'regional_manager' ? 'Regional Manager' : 'Office Member',
+    member_id: cleanMemberId('', localStorage.getItem('godspeed_user_email') || 'active'),
+    full_name: localStorage.getItem('godspeed_user_name') || (userRole === 'super_admin' ? 'Executive Director' : userRole === 'regional_manager' ? 'Regional Manager' : 'Office Member'),
     email: localStorage.getItem('godspeed_user_email') || 'office.member@godspeedhq.org',
     phone: '',
     role: userRole,
-    rank: userRole === 'super_admin' ? 'Director' : userRole === 'regional_manager' ? 'Executive Manager' : 'Distributors',
+    rank: localStorage.getItem('godspeed_user_rank') || (userRole === 'super_admin' ? 'Director' : userRole === 'regional_manager' ? 'Executive Manager' : 'Distributors'),
     office_id: 'off-01',
     office_name: 'GODSPEED Office',
     status: 'ACTIVE',
-    avatar_url: '',
+    avatar_url: localStorage.getItem('godspeed_user_avatar') || '',
     join_date: new Date().toISOString().slice(0, 10),
     pv_total: 0,
     earnings_ytd: 0,

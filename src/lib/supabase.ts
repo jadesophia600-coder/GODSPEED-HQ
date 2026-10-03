@@ -23,15 +23,32 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // ACTIVE SUPABASE DATA LAYER
 // ==========================================
 
+export function cleanMemberId(rawId?: string, seedStr?: string): string {
+  if (rawId && !rawId.includes('USR-') && !rawId.includes('usr-') && !rawId.endsWith('-') && rawId.startsWith('GSD-') && rawId.length >= 7) {
+    return rawId;
+  }
+  let hash = 0;
+  const seed = seedStr || rawId || 'godspeed';
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  const num = 1000 + (Math.abs(hash) % 9000);
+  return `GSD-${num}`;
+}
+
 export async function getCurrentUser(): Promise<Member | null> {
   try {
     const storedEmail = localStorage.getItem('godspeed_user_email') || '';
+    const storedRank = localStorage.getItem('godspeed_user_rank') || '';
     const { data: { user } } = await supabase.auth.getUser();
 
     const targetUserId = user?.id;
     const targetEmail = user?.email || storedEmail;
 
     if (!targetUserId && !targetEmail) return null;
+
+    const registeredRank = storedRank || user?.user_metadata?.business_status || 'Distributors';
 
     // 1. Attempt lookup by user.id in profiles
     if (targetUserId) {
@@ -44,12 +61,12 @@ export async function getCurrentUser(): Promise<Member | null> {
       if (!error && data) {
         return {
           id: data.id,
-          member_id: data.member_id || `GSD-${data.id.slice(0, 4)}`,
+          member_id: cleanMemberId(data.member_id, data.email || data.id),
           full_name: data.full_name || targetEmail || 'User',
           email: data.email || targetEmail || '',
           phone: data.phone || '',
           role: data.role || 'member',
-          rank: data.rank || 'Distributors',
+          rank: data.rank || registeredRank,
           office_id: data.office_id || 'off-01',
           office_name: data.office_name || 'GODSPEED Office',
           status: data.status || 'ACTIVE',
@@ -74,12 +91,12 @@ export async function getCurrentUser(): Promise<Member | null> {
       if (profileByEmail) {
         return {
           id: profileByEmail.id,
-          member_id: profileByEmail.member_id || `GSD-${profileByEmail.id.slice(0, 4)}`,
+          member_id: cleanMemberId(profileByEmail.member_id, targetEmail),
           full_name: profileByEmail.full_name || targetEmail.split('@')[0],
           email: profileByEmail.email || targetEmail,
           phone: profileByEmail.phone || '',
           role: profileByEmail.role || 'member',
-          rank: profileByEmail.rank || 'Distributors',
+          rank: profileByEmail.rank || registeredRank,
           office_id: profileByEmail.office_id || 'off-01',
           office_name: profileByEmail.office_name || 'GODSPEED Office',
           status: profileByEmail.status || 'ACTIVE',
@@ -100,7 +117,11 @@ export async function getCurrentUser(): Promise<Member | null> {
         .single();
 
       if (memberByEmail) {
-        return memberByEmail as Member;
+        return {
+          ...memberByEmail,
+          member_id: cleanMemberId(memberByEmail.member_id, targetEmail),
+          rank: memberByEmail.rank || registeredRank
+        } as Member;
       }
     }
 
@@ -110,12 +131,12 @@ export async function getCurrentUser(): Promise<Member | null> {
 
     return {
       id: resolvedId,
-      member_id: `GSD-${resolvedId.slice(0, 4).toUpperCase()}`,
+      member_id: cleanMemberId('', targetEmail),
       full_name: user?.user_metadata?.full_name || targetEmail.split('@')[0] || 'Member User',
       email: targetEmail,
       phone: '',
       role: user?.user_metadata?.role || storedRole,
-      rank: user?.user_metadata?.business_status || 'Distributors',
+      rank: registeredRank,
       office_id: 'off-01',
       office_name: 'GODSPEED Office',
       status: 'ACTIVE',
