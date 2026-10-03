@@ -450,11 +450,11 @@ export function App() {
   const activeUserDisplay: Member = currentUser || {
     id: 'user-active',
     member_id: cleanMemberId('', localStorage.getItem('godspeed_user_email') || 'active'),
-    full_name: localStorage.getItem('godspeed_user_name') || (userRole === 'super_admin' ? 'Executive Director' : userRole === 'regional_manager' ? 'Regional Manager' : 'Office Member'),
+    full_name: localStorage.getItem('godspeed_user_name') || (userRole === 'super_admin' ? 'Executive Director' : 'Office Member'),
     email: localStorage.getItem('godspeed_user_email') || 'office.member@godspeedhq.org',
     phone: '',
     role: userRole,
-    rank: localStorage.getItem('godspeed_user_rank') || (userRole === 'super_admin' ? 'Director' : userRole === 'regional_manager' ? 'Executive Manager' : 'Distributors'),
+    rank: localStorage.getItem('godspeed_user_rank') || (userRole === 'super_admin' ? 'Director' : 'Distributors'),
     office_id: 'off-01',
     office_name: 'GODSPEED Office',
     status: 'ACTIVE',

@@ -86,7 +86,7 @@ export const MembersTable: React.FC<MembersTableProps> = ({
             Export CSV
           </button>
 
-          {(userRole === 'super_admin' || userRole === 'regional_manager') && (
+          {userRole === 'super_admin' && (
             <button
               onClick={onAddMember}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"

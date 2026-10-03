@@ -36,30 +36,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           Interactive Evaluator Role Switcher
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-          Switch the active portal view permissions instantly between Super Admin, Regional Manager, and Standard Member.
+          Switch the active portal view permissions instantly between Admin and Member views.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {(['super_admin', 'regional_manager', 'member'] as UserRole[]).map((r) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {(['super_admin', 'member'] as UserRole[]).map((r) => (
             <button
               key={r}
               onClick={() => onChangeRole(r)}
-              className={`p-3.5 rounded-xl border text-left transition-all ${
+              className={`p-4 rounded-xl border text-left transition-all ${
                 userRole === r
                   ? 'border-blue-600 dark:border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 ring-2 ring-blue-600/20'
                   : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'
               }`}
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 capitalize">
-                  {r.replace('_', ' ')}
+                <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100">
+                  {r === 'super_admin' ? 'Admin' : 'Member'}
                 </span>
                 {userRole === r && (
-                  <span className="h-2 w-2 rounded-full bg-blue-600" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
                 )}
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {r === 'super_admin' ? 'Full organization control' : r === 'regional_manager' ? 'Office & team management' : 'Personal volume & downlines'}
+                {r === 'super_admin' ? 'Full organization management & executive controls' : 'Personal volume, check-in history & team downlines'}
               </p>
             </button>
           ))}

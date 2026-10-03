@@ -71,34 +71,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'OVERVIEW',
       items: [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin', 'regional_manager', 'member'] },
-        { id: 'attendance', label: 'Daily Attendance', icon: CalendarCheck, roles: ['super_admin', 'regional_manager', 'member'] }
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin', 'member'] },
+        { id: 'attendance', label: 'Daily Attendance', icon: CalendarCheck, roles: ['super_admin', 'member'] }
       ]
     },
     {
       title: 'MANAGEMENT',
       items: [
-        { id: 'members', label: 'Members', icon: Users, roles: ['super_admin', 'regional_manager'] },
-        { id: 'offices', label: 'Offices', icon: Building2, roles: ['super_admin', 'regional_manager'] },
-        { id: 'genealogy', label: 'Team Members', icon: GitFork, roles: ['super_admin', 'regional_manager', 'member'] }
+        { id: 'members', label: 'Members', icon: Users, roles: ['super_admin'] },
+        { id: 'offices', label: 'Offices', icon: Building2, roles: ['super_admin'] },
+        { id: 'genealogy', label: 'Team Members', icon: GitFork, roles: ['super_admin', 'member'] }
       ]
     },
     {
       title: 'WELLNESS',
       items: [
-        { id: 'health_scores', label: 'Health Scores', icon: HeartPulse, roles: ['super_admin', 'regional_manager', 'member'] }
+        { id: 'health_scores', label: 'Health Scores', icon: HeartPulse, roles: ['super_admin', 'member'] }
       ]
     },
     {
       title: 'COMMUNICATION',
       items: [
-        { id: 'chat', label: 'Chat & Broadcasts', icon: MessageSquare, roles: ['super_admin', 'regional_manager', 'member'] }
+        { id: 'chat', label: 'Chat & Broadcasts', icon: MessageSquare, roles: ['super_admin', 'member'] }
       ]
     },
     {
       title: 'SYSTEM',
       items: [
-        { id: 'settings', label: 'Settings', icon: Settings, roles: ['super_admin', 'regional_manager', 'member'] }
+        { id: 'settings', label: 'Settings', icon: Settings, roles: ['super_admin', 'member'] }
       ]
     }
   ];

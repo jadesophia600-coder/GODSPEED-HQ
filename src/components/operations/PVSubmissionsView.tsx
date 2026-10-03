@@ -143,7 +143,7 @@ export const PVSubmissionsView: React.FC<PVSubmissionsViewProps> = ({
                     </td>
 
                     <td className="py-3 px-4 text-right">
-                      {sub.status === 'PENDING' && (userRole === 'super_admin' || userRole === 'regional_manager') ? (
+                      {sub.status === 'PENDING' && userRole === 'super_admin' ? (
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => onApprovePV(sub.id)}

@@ -1,4 +1,4 @@
-export type UserRole = 'super_admin' | 'regional_manager' | 'member';
+export type UserRole = 'super_admin' | 'member';
 
 export type BusinessStatus = 'PRO' | 'Distributors' | 'Manager' | 'Senior Manager' | 'Executive Manager' | 'Director';
 

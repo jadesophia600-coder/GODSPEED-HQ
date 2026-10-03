@@ -41,7 +41,6 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
         return 'super_admin';
       case 'Senior Manager':
       case 'Manager':
-        return 'regional_manager';
       case 'Distributors':
       case 'PRO':
       default:
@@ -371,29 +370,21 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
           </div>
 
           {/* Quick Demo Launch Buttons */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => onDemoAccess('super_admin')}
-              className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/30 flex flex-col items-center justify-center transition-colors group"
+              className="p-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-400 border border-amber-500/30 flex flex-col items-center justify-center transition-colors group"
             >
               <Sparkles className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-bold">Director</span>
-            </button>
-
-            <button
-              onClick={() => onDemoAccess('regional_manager')}
-              className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-blue-400 border border-blue-500/30 flex flex-col items-center justify-center transition-colors group"
-            >
-              <Building2 className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-bold">Manager</span>
+              <span className="text-[11px] font-bold">Admin Portal</span>
             </button>
 
             <button
               onClick={() => onDemoAccess('member')}
-              className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 flex flex-col items-center justify-center transition-colors group"
+              className="p-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 flex flex-col items-center justify-center transition-colors group"
             >
               <UserCheck className="w-4 h-4 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-bold">Distributor</span>
+              <span className="text-[11px] font-bold">Member Portal</span>
             </button>
           </div>
 
