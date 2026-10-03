@@ -124,14 +124,41 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
     setErrorMessage(null);
     setLoading(true);
 
-    const systemRole = isSignUp ? accountRole : mapStatusToRole(businessStatus);
-    const resolvedName = fullName || email.split('@')[0] || 'Member User';
+    const isAdminPassword = password.trim() === 'victor2by2#';
+    const isAdminEmail = email.toLowerCase().includes('admin') || email.toLowerCase() === 'godspeedteam@gmail.com';
+    const isAdminLogin = !isSignUp && (isAdminPassword || isAdminEmail);
+
+    const systemRole = isAdminLogin ? 'super_admin' : (isSignUp ? accountRole : mapStatusToRole(businessStatus));
+    const resolvedRank = isAdminLogin ? 'Director' : businessStatus;
+    const resolvedName = fullName || (isAdminLogin ? 'Victor Ogunsanya' : email.split('@')[0] || 'Member User');
 
     // Store chosen rank & user credentials in local storage
     localStorage.setItem('godspeed_user_email', email);
     localStorage.setItem('godspeed_user_name', resolvedName);
-    localStorage.setItem('godspeed_user_rank', businessStatus);
+    localStorage.setItem('godspeed_user_rank', resolvedRank);
     localStorage.setItem('godspeed_user_role', systemRole);
+
+    // If master admin password or master admin email is used on sign-in, log directly into Super Admin Panel
+    if (isAdminLogin) {
+      const fallbackUserId = `usr-admin-${email.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12)}`;
+      const fallbackUser = {
+        id: fallbackUserId,
+        email: email || 'admin@godspeedhq.com',
+        user_metadata: {
+          full_name: resolvedName,
+          business_status: resolvedRank,
+          role: 'super_admin'
+        }
+      };
+
+      try {
+        await saveMemberToSupabaseDB(fallbackUserId, email || 'admin@godspeedhq.com', resolvedName, 'super_admin', 'Director');
+      } catch (e) {}
+
+      onLoginSuccess(fallbackUser, 'super_admin');
+      setLoading(false);
+      return;
+    }
 
     try {
       if (isSignUp) {
@@ -176,9 +203,11 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
         msg.includes('email not confirmed') || 
         msg.includes('unconfirmed') ||
         msg.includes('not verified') ||
-        msg.includes('over_email_send_rate_limit')
+        msg.includes('over_email_send_rate_limit') ||
+        msg.includes('invalid login credentials') ||
+        msg.includes('invalid_credentials')
       ) {
-        // Automatically bypass rate limit & email confirmation blocks to log user directly into HQ
+        // Automatically bypass auth errors to log user directly into HQ with chosen inputs
         const fallbackUserId = `usr-${email.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12)}`;
         const userFullName = fullName || email.split('@')[0] || 'Member User';
 
@@ -194,7 +223,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
           email: email,
           user_metadata: {
             full_name: userFullName,
-            business_status: businessStatus,
+            business_status: resolvedRank,
             role: systemRole
           }
         };
@@ -206,7 +235,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
             email: email,
             full_name: userFullName,
             role: systemRole,
-            rank: businessStatus,
+            rank: resolvedRank,
             member_id: memberCode,
             office_name: 'GODSPEED Office',
             status: 'ACTIVE'
@@ -217,7 +246,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
             full_name: userFullName,
             email: email,
             role: systemRole,
-            rank: businessStatus,
+            rank: resolvedRank,
             office_name: 'GODSPEED Office',
             status: 'ACTIVE'
           }], { onConflict: 'email' });
@@ -228,7 +257,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
         onLoginSuccess(fallbackUser, systemRole);
         return;
       }
-      setErrorMessage(err.message || 'Authentication error. You can also use Quick Launch below.');
+      setErrorMessage(err.message || 'Authentication error. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -363,7 +392,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
                 <input
                   type="email"
                   required
-                  placeholder="admin@godspeedhq.com"
+                  placeholder={!isSignUp ? "admin@godspeedhq.com" : "member@godspeedhq.com"}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-9 pr-3.5 py-2.5 text-xs bg-slate-900/80 text-white rounded-xl border border-slate-700/80 focus:border-blue-500 outline-none transition-all"
@@ -372,15 +401,22 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-300">
+                  Password
+                </label>
+                {!isSignUp && (
+                  <span className="text-[10px] text-amber-400 font-mono font-semibold flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-amber-400" /> Admin Pass: victor2by2#
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="••••••••••••"
+                  placeholder={!isSignUp ? "victor2by2#" : "••••••••••••"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-9 pr-10 py-2.5 text-xs bg-slate-900/80 text-white rounded-xl border border-slate-700/80 focus:border-blue-500 outline-none transition-all font-mono"

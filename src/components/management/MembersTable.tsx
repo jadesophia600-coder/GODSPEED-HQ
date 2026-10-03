@@ -49,15 +49,22 @@ export const MembersTable: React.FC<MembersTableProps> = ({
   };
 
   const filteredMembers = members.filter((m) => {
+    const query = search.trim().toLowerCase();
     const matchesSearch = 
-      m.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      m.email.toLowerCase().includes(search.toLowerCase()) ||
-      m.member_id.toLowerCase().includes(search.toLowerCase());
+      !query ||
+      m.full_name.toLowerCase().includes(query) ||
+      m.email.toLowerCase().includes(query) ||
+      m.member_id.toLowerCase().includes(query);
     
+    // If explicit search query is provided, match by query directly
+    if (query) {
+      return matchesSearch;
+    }
+
     const matchesRank = selectedRank === 'ALL' || m.rank === selectedRank;
     const matchesOffice = selectedOffice === 'ALL' || m.office_name === selectedOffice;
 
-    return matchesSearch && matchesRank && matchesOffice;
+    return matchesRank && matchesOffice;
   });
 
   const totalPages = Math.ceil(filteredMembers.length / pageSize) || 1;
